@@ -8,6 +8,8 @@ Discord-bot til **Benny's Original Motor Works** — tickets, løn, AI-priser, m
 
 ### [⬇️ Download seneste bot — `bennys-upload-linux-LATEST.tar.gz`](https://github.com/Clapshq/Bennys-Bot/releases/latest/download/bennys-upload-linux-LATEST.tar.gz)
 
+**Kommandoer kommer ikke ind?** → Læs **[DEPLOY-COLORNODES.txt](DEPLOY-COLORNODES.txt)** (ColorNodes/Pterodactyl)
+
 **Alternativ:** Åbn **[Releases](https://github.com/Clapshq/Bennys-Bot/releases)** → vælg seneste release → download.
 
 Upload filen til Cybrancee (`/home/container`).

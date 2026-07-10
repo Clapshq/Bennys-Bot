@@ -1,0 +1,98 @@
+╔══════════════════════════════════════════════════════════════╗
+║  COLORNODES / PTERODACTYL — KOMMANDOER KOMMER IKKE IND?      ║
+╚══════════════════════════════════════════════════════════════╝
+
+HVIS KONSOLLEN VISER:
+  "Loaded 0 slashcommands (Path: ./commands/slashcommands)"
+  "Botta i Silkeborg Roleplay"
+
+→ Det er IKKE Benny's bot. Upload fejlede ELLER forkert startup-fil.
+
+═══════════════════════════════════════════════════════════════
+ KORREKT UPLOAD (File Manager — IKKE base64 i konsol)
+═══════════════════════════════════════════════════════════════
+
+1) STOP serveren (rød knap)
+
+2) File Manager → upload:
+   bennys-upload-linux-LATEST.tar.gz
+   (download fra GitHub Releases)
+
+3) SLET gamle bot-filer MED BACKSLASH i navnet, fx:
+   handlers\file.js   ← FORKERT (én fil med \ i navnet)
+   Slet også gammel zip/tar hvis du har uploadet flere
+
+4) BEHOLD:
+   data/     ← tickets, løn, ansøgninger
+   .env      ← token og nøgler
+
+5) KONSOL (efter stop):
+   cd /home/container
+   tar -xzf bennys-upload-linux-LATEST.tar.gz
+   ls handlers/payrollActions.js
+
+   Skal vise filen. Hvis "No such file" → tar fejlede.
+
+6) INSTALL + REGISTRER KOMMANDOER:
+   npm install
+   npm run verify
+   npm run deploy-commands
+
+   deploy skal vise noget lignende:
+   [deploy] OK — 13 kommandoer: setup, purge, mod, ticket, stats, løn, udbetal, ...
+
+7) TJEK STARTUP I PANELET:
+   Startup Command skal være:
+     node index.js
+   eller:
+     npm start
+
+   IKKE en anden bot-fil.
+
+8) START serveren
+
+9) KONSOL SKAL VISE:
+   [INFO] [bennys] Benny's bot online (build: løn/support)
+   IKKE "Silkeborg" eller "slashcommands"
+
+═══════════════════════════════════════════════════════════════
+ AUTO-DEPLOY (valgfrit — registrerer kommandoer ved hver start)
+═══════════════════════════════════════════════════════════════
+
+Tilføj i .env:
+   AUTO_DEPLOY_COMMANDS=1
+
+Gem og genstart. Botten kører deploy-commands automatisk.
+
+═══════════════════════════════════════════════════════════════
+ TEST I DISCORD
+═══════════════════════════════════════════════════════════════
+
+Nye slash-kommandoer (efter deploy):
+   /løn opret
+   /løn remove
+   /udbetal
+
+Virker uden deploy (prefix):
+   ,panels refresh tickets
+   ,ai help
+
+Discord kan tage 1-2 minutter før nye slash-kommandoer vises.
+Prøv Ctrl+R i Discord eller genåbn appen.
+
+═══════════════════════════════════════════════════════════════
+ FEJLSØGNING
+═══════════════════════════════════════════════════════════════
+
+tar: Cannot read: Is a directory
+  → Brug File Manager upload — lad være med at paste base64 i konsol
+
+npm: not found
+  → Vælg Node.js 18+ image i panelet og genstart
+
+[deploy] Mangler DISCORD_GUILD_ID
+  → Tilføj DISCORD_GUILD_ID=dit_server_id i .env
+
+Kommandoer vises stadig ikke
+  → Kør npm run deploy-commands igen mens botten er STOPPET
+  → Tjek DISCORD_CLIENT_ID matcher bot-application i Developer Portal

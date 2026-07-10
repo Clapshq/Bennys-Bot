@@ -130,7 +130,7 @@ client.once(Events.ClientReady, async (c) => {
   const health = runStartupHealthCheck(c);
   for (const w of health) rootLogger.warn(`[health] ${w}`);
 
-  rootLogger.info(`${c.user.tag} online`, {
+  rootLogger.info(`Benny's bot online (build: løn/support)`, {
 
     guilds: c.guilds.cache.size,
 
