@@ -1,14 +1,16 @@
 ╔══════════════════════════════════════════════════════════════╗
-║  BENNY'S BOT — HVOR ER UPLOAD-FILEN?                         ║
+║  BENNY'S BOT — DOWNLOAD                                      ║
 ╚══════════════════════════════════════════════════════════════╝
 
-  Gå til mappen:
+  1 KLIK (anbefalet):
 
-      releases/
+  https://github.com/Clapshq/Bennys-Bot/releases/latest/download/bennys-upload-linux-LATEST.tar.gz
 
-  Download og upload til Cybrancee:
+  ─────────────────────────────────────────────────────────────
 
-      releases/bennys-upload-linux-LATEST.tar.gz
+  ELLER via GitHub:
+
+  Repo → fanen "Releases" → seneste release → download
 
   ─────────────────────────────────────────────────────────────
 

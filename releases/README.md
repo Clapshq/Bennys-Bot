@@ -1,18 +1,24 @@
-# Bot-upload til server
+# Seneste bot-upload
 
-**Upload denne fil til Cybrancee:**
+## Download (nemmest)
 
-## `bennys-upload-linux-LATEST.tar.gz`
+**[⬇️ Download LATEST.tar.gz](https://github.com/Clapshq/Bennys-Bot/releases/latest/download/bennys-upload-linux-LATEST.tar.gz)**
 
-Det er den nyeste komplette bot-pakke. Brug altid filen med **LATEST** i navnet.
+Eller: **[GitHub Releases](https://github.com/Clapshq/Bennys-Bot/releases)** → seneste release.
 
 ---
 
-### Hurtig guide
+## Filer i denne mappe
 
-1. Download **`bennys-upload-linux-LATEST.tar.gz`** fra denne mappe
-2. Upload til `/home/container` på serveren
-3. Stop botten → udpak → deploy → start:
+| Fil | Brug |
+|-----|------|
+| `bennys-upload-linux-LATEST.tar.gz` | Lokal kopi — samme som GitHub Release |
+| `bennys-upload-linux-YYYY-MM-DD.tar.gz` | Dateret backup |
+| `LATEST.txt` | Kort info |
+
+---
+
+## Upload på Cybrancee
 
 ```bash
 cd /home/container
@@ -20,24 +26,4 @@ tar -xzf bennys-upload-linux-LATEST.tar.gz
 npm run deploy-commands
 ```
 
-4. **Behold** `data/` og `.env` på serveren
-
----
-
-### Andre filer her
-
-| Fil | Formål |
-|-----|--------|
-| `bennys-upload-linux-LATEST.tar.gz` | **Brug denne** — seneste version |
-| `bennys-upload-linux-YYYY-MM-DD.tar.gz` | Dateret backup af samme build |
-| `LATEST.txt` | Kort info om seneste pakke |
-
----
-
-### Genpak lokalt
-
-Fra projektroden:
-
-```bash
-./scripts/pack-release.sh
-```
+Behold `data/` og `.env` på serveren.

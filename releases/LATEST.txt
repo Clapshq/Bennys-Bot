@@ -1,4 +1,4 @@
-Seneste bot-upload — genereret 2026-07-10 21:48 UTC
+Seneste bot-upload — genereret 2026-07-10 21:51 UTC
 
 UPLOAD DENNE FIL TIL CYBRANCEE:
   releases/bennys-upload-linux-LATEST.tar.gz
