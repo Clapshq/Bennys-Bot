@@ -1,2 +1,2 @@
-/** Samme som index.js — npm start */
+/** Samme som index.js */
 import "./index.js";
