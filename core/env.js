@@ -59,6 +59,9 @@ export const env = Object.freeze({
     .filter(Boolean),
   aiPayrollAutoScan: parseBool(process.env.AI_PAYROLL_AUTO_SCAN, true),
 
+  /** Scan løn-kanal-historik ved opstart (kræver GROQ_API_KEY) */
+  payrollBackfillOnStart: parseBool(process.env.PAYROLL_BACKFILL_ON_START, true),
+
   /** Registrer slash-kommandoer automatisk ved hver bot-start (standard: ja) */
   autoDeployCommands: parseBool(process.env.AUTO_DEPLOY_COMMANDS, true),
 

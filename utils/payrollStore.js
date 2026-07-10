@@ -71,12 +71,41 @@ export function listPayrollEmployees(guildId) {
   return Object.values(data.employees).filter((e) => e.guildId === guildId);
 }
 
+export function hasPayrollInvoiceMessage(guildId, userId, messageId) {
+  const emp = getPayrollEmployee(guildId, userId);
+  if (!emp || !messageId) return false;
+  return emp.invoices.some((i) => i.messageId === messageId);
+}
+
+export function recalculatePayrollBalance(emp) {
+  const earned = (emp.invoices ?? []).reduce((s, i) => s + (Number(i.employeePay) || 0), 0);
+  emp.totalEarned = earned;
+  emp.pendingPay = Math.max(0, earned - (Number(emp.totalPaid) || 0));
+  return emp;
+}
+
+export function setEmployeeInvoices(guildId, userId, invoices, { preservePaid = true } = {}) {
+  const data = readStore();
+  const key = employeeKey(guildId, userId);
+  const emp = data.employees[key];
+  if (!emp) return null;
+
+  const totalPaid = preservePaid ? emp.totalPaid ?? 0 : 0;
+  emp.invoices = invoices.slice(-200);
+  emp.totalPaid = totalPaid;
+  recalculatePayrollBalance(emp);
+  emp.updatedAt = new Date().toISOString();
+  writeStore(data, true);
+  return emp;
+}
+
 export function addPayrollInvoice(guildId, channelId, {
   invoiceTotal,
   employeePay,
   scannedById,
   scannedByTag,
   messageId,
+  messageDate,
 }) {
   const data = readStore();
   const empKey = data.byChannel[channelKey(guildId, channelId)];
@@ -87,17 +116,20 @@ export function addPayrollInvoice(guildId, channelId, {
   const total = Math.round(Number(invoiceTotal) || 0);
   if (pay <= 0) return emp;
 
-  emp.pendingPay += pay;
-  emp.totalEarned += pay;
+  if (messageId && emp.invoices.some((i) => i.messageId === messageId)) {
+    return emp;
+  }
+
   emp.invoices.push({
     messageId: messageId ?? null,
     invoiceTotal: total,
     employeePay: pay,
     scannedById: scannedById ?? null,
     scannedByTag: scannedByTag ?? null,
-    date: new Date().toISOString(),
+    date: messageDate ?? new Date().toISOString(),
   });
   if (emp.invoices.length > 200) emp.invoices = emp.invoices.slice(-200);
+  recalculatePayrollBalance(emp);
   emp.updatedAt = new Date().toISOString();
 
   writeStore(data);

@@ -38,6 +38,7 @@ function isExemptChannel(channel) {
   if (moderation.exemptChannels.includes(channel.name)) return true;
   if (channel.name.startsWith("bestilling-") || channel.name.startsWith("henvendelse-") || channel.name.startsWith("ticket-")) return true;
   if (channel.name.startsWith("💰-løn-")) return true;
+  if (channel.name.startsWith("løn-") || channel.name.startsWith("lon-")) return true;
   return false;
 }
 

@@ -5,6 +5,10 @@ import {
   isPayrollStaff,
 } from "../handlers/salaryHandler.js";
 import { payoutEmployee } from "../handlers/payrollActions.js";
+import { backfillAllSalaryChannels, backfillSalaryChannel } from "../handlers/payrollBackfill.js";
+import { getSalaryChannelName, isSalaryChannel } from "../handlers/salaryHandler.js";
+import { getPayrollEmployee } from "../utils/payrollStore.js";
+import { formatKr } from "../utils/quoteBuilder.js";
 import { LEDelse_COMMAND_PERMISSIONS } from "../config/commandPermissions.js";
 
 const lonCommand = new SlashCommandBuilder()
@@ -28,6 +32,14 @@ const lonCommand = new SlashCommandBuilder()
       .setDescription("Fjern medarbejderens løn-kanal og slet dem fra lønsystemet")
       .addUserOption((opt) =>
         opt.setName("medarbejder").setDescription("Medarbejder der skal fjernes").setRequired(true)
+      )
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName("sync")
+      .setDescription("Scan løn-kanal-historik og opdater lønsaldo (alle eller én medarbejder)")
+      .addUserOption((opt) =>
+        opt.setName("medarbejder").setDescription("Kun denne persons kanal (tom = alle)").setRequired(false)
       )
   );
 
@@ -93,6 +105,52 @@ export const lonCommandExport = {
         content:
           `✅ **${user.tag}** er fjernet fra lønsystemet.${pendingNote}\n` +
           (result.channelDeleted ? `🗑️ Løn-kanal slettet.` : `ℹ️ Ingen løn-kanal at slette.`),
+      });
+    }
+
+    if (sub === "sync") {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      const user = interaction.options.getUser("medarbejder");
+
+      if (user) {
+        const channel =
+          interaction.guild.channels.cache.find(
+            (c) => isSalaryChannel(c) && getPayrollEmployee(interaction.guild.id, user.id)?.channelId === c.id
+          ) ??
+          interaction.guild.channels.cache.find((c) => c.name === getSalaryChannelName(user.username));
+
+        if (!channel) {
+          return interaction.editReply({ content: `❌ Ingen løn-kanal fundet for **${user.tag}**.` });
+        }
+
+        const result = await backfillSalaryChannel(channel);
+        if (!result.ok) {
+          return interaction.editReply({ content: `❌ ${result.error}` });
+        }
+
+        return interaction.editReply({
+          content:
+            `✅ **#${result.channel}** (${result.owner})\n` +
+            `📋 **${result.invoices}** fakturaer fundet\n` +
+            `💰 Udestående: **${formatKr(result.pendingPay)}**` +
+            (result.aiScanned ? `\n🤖 ${result.aiScanned} nye via AI-scan` : ""),
+        });
+      }
+
+      await interaction.editReply({ content: "⏳ Scanner alle løn-kanaler — det kan tage et par minutter…" });
+
+      const summary = await backfillAllSalaryChannels(interaction.guild);
+      const lines = summary.results
+        .filter((r) => r.ok)
+        .map((r) => `• **#${r.channel}** — ${r.invoices} fakturaer → ${formatKr(r.pendingPay)}`)
+        .slice(0, 20);
+
+      return interaction.editReply({
+        content:
+          `✅ Løn-historik opdateret (**${summary.synced}/${summary.channels}** kanaler)\n` +
+          `📋 **${summary.totalInvoices}** fakturaer i alt\n\n` +
+          (lines.length ? lines.join("\n") : "Ingen fakturaer fundet."),
       });
     }
   },

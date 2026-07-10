@@ -148,6 +148,7 @@ export async function processInvoiceImages(message, { loadingMessage = null } = 
     scannedById: message.author.id,
     scannedByTag: message.author.tag,
     messageId: message.id,
+    messageDate: new Date(message.createdTimestamp).toISOString(),
   });
 
   const embed = buildInvoiceEmbed(data, {
@@ -164,6 +165,49 @@ export async function processInvoiceImages(message, { loadingMessage = null } = 
   }
 
   return { data, employeePay, owner, pendingPay: updated?.pendingPay ?? 0 };
+}
+
+/** Parse lønbeløb fra eksisterende bot-embed i kanal-historik */
+export function parsePayrollFromBotEmbed(embed) {
+  const text = `${embed.title ?? ""}\n${embed.description ?? ""}`;
+  if (!/løn|udbetaling|lønsaldo/i.test(text)) return null;
+
+  const payMatch = text.match(/\*\*([\d.,]+)\s*kr\.?\*\*/gi);
+  if (!payMatch?.length) return null;
+
+  const parseKr = (raw) => {
+    const n = raw.replace(/\*\*/g, "").replace(/kr\.?/gi, "").trim().replace(/\./g, "").replace(",", ".");
+    return Math.round(Number(n) || 0);
+  };
+
+  const employeePay = parseKr(payMatch[0]);
+  let invoiceTotal = 0;
+  const totalMatch = text.match(/faktura\s+på\s+\*\*([\d.,]+)\s*kr\.?\*\*/i);
+  if (totalMatch) invoiceTotal = parseKr(totalMatch[1]);
+  else if (employeePay > 0) invoiceTotal = Math.round(employeePay / (JG_MARKUP_PERCENT / 100));
+
+  if (employeePay <= 0) return null;
+  return { employeePay, invoiceTotal };
+}
+
+/** Scan faktura uden at svare i kanalen (til historik-backfill) */
+export async function scanInvoiceForPayroll(message, { silent = true } = {}) {
+  const urls = await collectMessageImageUrls(message);
+  if (!urls.length) return null;
+
+  const owner = resolveSalaryChannelOwner(message.guild, message.channel);
+  if (!owner?.userId) return null;
+
+  const raw = await groqVision(INVOICE_SCAN_PROMPT, urls, { json: true });
+  const data = parseJsonFromAi(raw);
+  const employeePay = resolveEmployeePay(data);
+  const invoiceTotal = resolveInvoiceTotal(data);
+
+  if (!silent) {
+    return processInvoiceImages(message);
+  }
+
+  return { data, employeePay, invoiceTotal, owner, messageId: message.id };
 }
 
 async function logPayrollToDashboard(message, data, employeePay, owner) {

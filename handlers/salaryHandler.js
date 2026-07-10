@@ -26,7 +26,10 @@ export function getSalaryChannelName(username) {
 }
 
 export function isSalaryChannel(channel) {
-  return Boolean(channel?.name?.startsWith(SALARY_CHANNEL_PREFIX));
+  const name = channel?.name ?? "";
+  if (name.startsWith(SALARY_CHANNEL_PREFIX)) return true;
+  if (name.startsWith("løn-") || name.startsWith("lon-")) return true;
+  return false;
 }
 
 export function isPayrollStaff(member) {

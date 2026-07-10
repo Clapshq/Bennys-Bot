@@ -38,6 +38,7 @@ import { trackMessage, cacheDeletedMessage } from "./handlers/snipeHandler.js";
 import { handleAntiNuke } from "./security/antiNuke.js";
 import { registerPricePanelAutoRefresh, refreshStoredPricePanel } from "./handlers/pricePanelHandler.js";
 import { syncSalaryChannelsToStore } from "./handlers/salaryHandler.js";
+import { startPayrollBackfillOnReady } from "./handlers/payrollBackfill.js";
 import { startDashboardSync, requestDashboardSync } from "./services/dashboardSync.js";
 import { startDashboardCommandProcessor } from "./services/dashboardCommands.js";
 import { getDashboardTranscriptWarnings, canPublishTranscripts } from "./services/dashboardStore.js";
@@ -111,6 +112,7 @@ client.once(Events.ClientReady, async (c) => {
 
   startDashboardSync(c);
   startDashboardCommandProcessor(c);
+  startPayrollBackfillOnReady(c);
 
   if (env.dashboardEnabled) {
     for (const w of getDashboardTranscriptWarnings()) rootLogger.warn(`[dashboard] ${w}`);
