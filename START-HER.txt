@@ -21,6 +21,9 @@ VIGTIGT: Behold .env og data/ på serveren — overskriv dem IKKE!
 5) Kør én gang i konsollen (nye slash-kommandoer):
      npm run deploy-commands
 
+   ELLER: spring over — botten registrerer kommandoer AUTOMATISK ved start
+   (standard fra denne version)
+
 6) Start botten
 
 7) Test i Discord:

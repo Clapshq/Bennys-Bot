@@ -59,6 +59,9 @@ export const env = Object.freeze({
     .filter(Boolean),
   aiPayrollAutoScan: parseBool(process.env.AI_PAYROLL_AUTO_SCAN, true),
 
+  /** Registrer slash-kommandoer automatisk ved hver bot-start (standard: ja) */
+  autoDeployCommands: parseBool(process.env.AUTO_DEPLOY_COMMANDS, true),
+
   /** Dashboard (Vercel + Supabase) */
   dashboardEnabled: parseBool(process.env.DASHBOARD_ENABLED, false),
   dashboardAppUrl: (() => {
@@ -80,6 +83,9 @@ export function validateEnv() {
   const errors = [];
   if (!env.token) errors.push("DISCORD_TOKEN mangler");
   if (!env.clientId) errors.push("DISCORD_CLIENT_ID mangler");
+  if (env.autoDeployCommands && !env.guildId) {
+    errors.push("DISCORD_GUILD_ID mangler — slash-kommandoer registreres ikke på din server (kun globalt)");
+  }
   if (env.moderation && !env.messageContent) {
     errors.push("MESSAGE_CONTENT bør være true når moderation er aktiv");
   }

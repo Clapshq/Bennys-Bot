@@ -1,0 +1,10 @@
+Benny's Discord Bot — korrekt upload
+Build: løn/support (auto-deploy slash-kommandoer)
+
+Hvis du kan se denne fil i File Manager, er uploaden sandsynligvis korrekt.
+Tjek også at handlers/payrollActions.js findes.
+
+Slash-kommandoer registreres AUTOMATISK når botten starter.
+Ingen konsol nødvendig.
+
+Nye kommandoer: /løn opret · /løn remove · /udbetal

@@ -41,6 +41,7 @@ import { syncSalaryChannelsToStore } from "./handlers/salaryHandler.js";
 import { startDashboardSync, requestDashboardSync } from "./services/dashboardSync.js";
 import { startDashboardCommandProcessor } from "./services/dashboardCommands.js";
 import { getDashboardTranscriptWarnings, canPublishTranscripts } from "./services/dashboardStore.js";
+import { deploySlashCommandsOnStartup } from "./core/startupDeploy.js";
 
 
 
@@ -62,17 +63,7 @@ if (!env.token) {
 
 }
 
-if (process.env.AUTO_DEPLOY_COMMANDS === "1") {
-  try {
-    const { registerSlashCommands } = await import("./deploy-commands.js");
-    await registerSlashCommands();
-    rootLogger.info("Auto-deploy: slash-kommandoer registreret");
-  } catch (err) {
-    rootLogger.error("Auto-deploy fejlede — kør npm run deploy-commands manuelt", {
-      error: err.message,
-    });
-  }
-}
+await deploySlashCommandsOnStartup();
 
 const client = new Client({
 

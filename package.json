@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node index.js",
     "deploy-commands": "node deploy-commands.js",
+    "postinstall": "node scripts/postinstall-deploy.js",
     "pack": "bash scripts/pack-release.sh",
     "verify": "bash scripts/verify-server.sh"
   },

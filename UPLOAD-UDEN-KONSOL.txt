@@ -1,0 +1,84 @@
+╔══════════════════════════════════════════════════════════════╗
+║  UPLOAD UDEN KONSOL (ColorNodes / File Manager)              ║
+╚══════════════════════════════════════════════════════════════╝
+
+Slash-kommandoer registreres AUTOMATISK når botten starter.
+Du behøver IKKE køre deploy-commands i konsollen.
+
+═══════════════════════════════════════════════════════════════
+ TRIN 1 — Download
+═══════════════════════════════════════════════════════════════
+
+https://github.com/Clapshq/Bennys-Bot/releases/latest/download/bennys-upload-linux-LATEST.tar.gz
+
+═══════════════════════════════════════════════════════════════
+ TRIN 2 — Stop botten
+═══════════════════════════════════════════════════════════════
+
+Klik STOP i panelet.
+
+═══════════════════════════════════════════════════════════════
+ TRIN 3 — File Manager
+═══════════════════════════════════════════════════════════════
+
+1) BEHOLD disse mapper/filer (slet dem IKKE):
+   • data/
+   • .env
+
+2) SLET gamle bot-filer (handlers, commands, index.js osv.)
+   Slet også filer med BACKSLASH i navnet (fx handlers\fil.js)
+
+3) UPLOAD bennys-upload-linux-LATEST.tar.gz
+
+4) Udpak i File Manager:
+   • Højreklik på tar.gz → Extract / Unarchive
+   (de fleste paneler har denne knap)
+
+5) TJEK at disse findes efter udpakning:
+   • BENNYS-BOT.txt          ← bekræfter korrekt bot
+   • index.js
+   • handlers/payrollActions.js
+
+═══════════════════════════════════════════════════════════════
+ TRIN 4 — Startup i panelet
+═══════════════════════════════════════════════════════════════
+
+Startup Command skal være:
+   node index.js
+eller:
+   npm start
+
+═══════════════════════════════════════════════════════════════
+ TRIN 5 — Start botten
+═══════════════════════════════════════════════════════════════
+
+Klik START. Vent 30 sek. Genindlæs Discord (Ctrl+R).
+
+Test: /løn · /udbetal
+
+═══════════════════════════════════════════════════════════════
+ HVAD DU SKAL SE I LOGGEN (øverst efter start)
+═══════════════════════════════════════════════════════════════
+
+KORREKT:
+   [deploy] Slash-kommandoer registreret ved opstart
+   [bennys] Benny's bot online (build: løn/support)
+
+FORKERT (gammel bot kører stadig):
+   Loaded 0 slashcommands
+   commands/slashcommands
+   Silkeborg Roleplay
+
+→ Gå tilbage til trin 3 — upload er ikke gået igennem.
+
+═══════════════════════════════════════════════════════════════
+ .env (skal allerede findes på serveren)
+═══════════════════════════════════════════════════════════════
+
+DISCORD_TOKEN=...
+DISCORD_CLIENT_ID=...
+DISCORD_GUILD_ID=...        ← VIGTIG for slash-kommandoer
+
+AUTO_DEPLOY_COMMANDS=true   ← standard, behøver ikke ændres
+
+Slå kun deploy fra med: AUTO_DEPLOY_COMMANDS=false
