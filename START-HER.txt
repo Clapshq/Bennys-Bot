@@ -1,5 +1,5 @@
 ╔══════════════════════════════════════════════════════════════╗
-║  BENNY'S — UPLOAD (AI + priser + panel)                      ║
+║  BENNY'S — UPLOAD (løn + support + tickets)                  ║
 ╚══════════════════════════════════════════════════════════════╝
 
 VIGTIGT: Behold .env og data/ på serveren — overskriv dem IKKE!
@@ -18,12 +18,16 @@ VIGTIGT: Behold .env og data/ på serveren — overskriv dem IKKE!
 
 4) Tjek .env — tilføj AI-nøgle (se nedenfor) hvis den mangler
 
-5) Start botten
+5) Kør én gang i konsollen (nye slash-kommandoer):
+     npm run deploy-commands
 
-6) Test i Discord:
-     ,pris panel          (ledelse — i #ordrer-og-løn)
-     ,ai help            (staff — i ticket eller alle kanaler)
-     ,pris idag          (staff)
+6) Start botten
+
+7) Test i Discord:
+     /løn opret @medarbejder   (ledelse)
+     /udbetal @medarbejder     (ledelse)
+     ,panels refresh tickets   (opdater #kontakt med Generelt support)
+     ,pris panel               (ledelse — i #ordrer-og-løn)
 
 ═══════════════════════════════════════════════════════════════
  .env — AI (PÅKRÆVET for AI-funktioner)
@@ -43,8 +47,21 @@ PRIS_SCAN_CHANNELS=ordrer-og-løn,ledelse
 Gem .env og genstart botten.
 
 ═══════════════════════════════════════════════════════════════
- NYE FUNKTIONER (virker uden deploy-commands)
+ NYE FUNKTIONER
 ═══════════════════════════════════════════════════════════════
+
+Løn (slash — kræver deploy-commands):
+  /løn opret @medarbejder      — opret personlig #💰-løn-kanal
+  /løn remove @medarbejder     — slet kanal + fjern fra lønsystem
+  /udbetal @bruger             — vis beløb, nulstil løntæller efter udbetaling
+
+Løn (automatisk):
+  • Faktura i #💰-løn-[navn] → tælles på **kanal-ejer** (ikke afsender)
+  • Saldo gemmes i data/payroll.json — bevares ved opdatering
+
+Tickets:
+  • #kontakt → ny type: **Generelt support**
+  • Staff notes virker igen (vises i ticket + #ticket-logs)
 
 AI & priser (prefix):
   ,ai <spørgsmål>              — staff overalt, kunder i tickets
@@ -87,6 +104,8 @@ Behold data/applications   → tar overskriver IKKE data/*.json
                            → data/payroll.json bevarer lønsaldo ved opdatering
 
 Tjek at disse filer findes efter upload:
+  utils/payrollStore.js
+  handlers/payrollActions.js
   handlers/pricePanelHandler.js
   handlers/ticketAiHandler.js
   handlers/partsPriceHandler.js
