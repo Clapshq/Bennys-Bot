@@ -65,7 +65,7 @@ function wipeCodeDirs() {
     }
   }
 
-  for (const file of ["index.js", "deploy-commands.js", "start.js", "BENNYS-BOT.txt", "START-HER.txt", "UPLOAD-UDEN-KONSOL.txt", "DEPLOY-COLORNODES.txt", "DOWNLOAD.txt", "README.md", "CYBRANCEE-UPLOAD.txt"]) {
+  for (const file of ["bot.js", "deploy-commands.js", "start.js", "BENNYS-BOT.txt", "START-HER.txt", "UPLOAD-UDEN-KONSOL.txt", "DEPLOY-COLORNODES.txt", "DOWNLOAD.txt", "README.md", "CYBRANCEE-UPLOAD.txt"]) {
     const full = path.join(ROOT, file);
     if (fs.existsSync(full) && !PRESERVE_FILES.has(file)) {
       fs.rmSync(full, { force: true });
@@ -91,9 +91,8 @@ function extractArchive(archivePath) {
 }
 
 function restartBot() {
-  const entry = path.join(ROOT, "start.js");
-  const script = fs.existsSync(entry) ? "start.js" : "index.js";
-  const child = spawn(process.execPath, [script, "--no-update"], {
+  const script = "index.js";
+  const child = spawn(process.execPath, [path.join(ROOT, script), "--no-update"], {
     cwd: ROOT,
     stdio: "inherit",
     env: process.env,
@@ -116,8 +115,8 @@ export function applyPendingUpload() {
   wipeCodeDirs();
   extractArchive(archive);
 
-  if (!fs.existsSync(path.join(ROOT, "index.js"))) {
-    log.error("Udpakning fejlede — index.js mangler. Upload tar.gz igen.");
+  if (!fs.existsSync(path.join(ROOT, "bot.js"))) {
+    log.error("Udpakning fejlede — bot.js mangler. Upload tar.gz igen.");
     process.exit(1);
   }
 

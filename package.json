@@ -2,10 +2,10 @@
   "name": "bennys-discord-bot",
   "version": "1.0.0",
   "description": "Fuld Discord-bot til Benny's — setup, tickets, roller & løn",
-  "main": "start.js",
+  "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node start.js",
+    "start": "node index.js",
     "deploy-commands": "node deploy-commands.js",
     "postinstall": "node scripts/postinstall-deploy.js",
     "pack": "bash scripts/pack-release.sh",

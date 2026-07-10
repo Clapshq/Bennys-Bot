@@ -8,15 +8,14 @@ function sleep(ms) {
 }
 
 /**
- * Registrerer slash-kommandoer ved bot-start.
- * Kører automatisk (standard) — slå fra med AUTO_DEPLOY_COMMANDS=false i .env
+ * Registrerer slash-kommandoer ved bot-start (kører altid).
  */
 export async function deploySlashCommandsOnStartup() {
   if (!env.autoDeployCommands) {
-    rootLogger.info("[deploy] Auto-deploy slået fra (AUTO_DEPLOY_COMMANDS=false)");
-    return { ok: false, skipped: true };
+    rootLogger.warn(
+      "[deploy] AUTO_DEPLOY_COMMANDS=false i .env — slash-kommandoer registreres alligevel (/løn, /udbetal)"
+    );
   }
-
   if (!env.token || !env.clientId) {
     rootLogger.warn("[deploy] Springer over — mangler DISCORD_TOKEN eller DISCORD_CLIENT_ID");
     return { ok: false, skipped: true };

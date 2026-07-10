@@ -16,7 +16,10 @@
 
 4) START botten
 
-   Ved start:
+   Panelet bruger allerede BOT_JS_FILE=index.js — det er korrekt.
+   Du behøver IKKE ændre startup.
+
+   Ved start (hvis tar.gz ligger i mappen):
    • sletter gamle handlers, commands, utils, core osv.
    • udpakker tar.gz automatisk
    • genstarter med ny kode
@@ -33,13 +36,9 @@
 
 Startup i panelet (Settings → Startup Command):
 
-   npm start
+   BOT_JS_FILE=index.js   (standard — ændr ikke)
 
-Første gang fra gammel bot? Sæt midlertidigt til:
-
-   if [ -f bennys-upload-linux-LATEST.tar.gz ]; then tar -xzf bennys-upload-linux-LATEST.tar.gz; fi && node start.js
-
-(Efter første succes kan du skifte til bare: npm start)
+   Panelet kører: node /home/container/index.js
 
 Download:
 https://github.com/Clapshq/Bennys-Bot/releases/latest/download/bennys-upload-linux-LATEST.tar.gz
