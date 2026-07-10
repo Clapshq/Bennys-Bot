@@ -1,5 +1,4 @@
 import { checkCooldown } from "../core/cooldowns.js";
-import { env } from "../core/env.js";
 import { rootLogger } from "../core/logger.js";
 import { isTicketChannel, getTicketMeta } from "./ticketHandler.js";
 import { isSalaryChannel, resolveSalaryChannelOwner } from "./salaryHandler.js";
@@ -18,13 +17,11 @@ import {
   formatKr,
 } from "../utils/quoteBuilder.js";
 import { getPartsPriceStore } from "../utils/partsPriceStore.js";
-import { collectMessageImageUrls, messageHasImages } from "../utils/messageImages.js";
+import { collectMessageImageUrls } from "../utils/messageImages.js";
 import { addPayrollInvoice } from "../utils/payrollStore.js";
 import { JG_MARKUP_PERCENT } from "../config/jgParts.js";
 
 const AI_COOLDOWN_MS = 12_000;
-const PAYROLL_AUTO_COOLDOWN_MS = 8_000;
-const payrollProcessedIds = new Set();
 
 function aiHelpEmbed() {
   return createEmbed("accent")
@@ -33,7 +30,7 @@ function aiHelpEmbed() {
     .addFields(
       { name: "Spørgsmål", value: "`,ai Hvad koster bugsering?`\n`,ai Forklar JG tuning`", inline: false },
       { name: "Beregn tilbud", value: "`,ai tilbud V8 motor og keramiske bremser`", inline: false },
-      { name: "Faktura (staff)", value: "Upload screenshot i `#💰-løn-[navn]` — botten svarer med **lønbeløb**", inline: false },
+      { name: "Faktura (staff)", value: "Upload i løn-kanal — brug `/løn stats` for oversigt (ingen beskeder i kanalen)", inline: false },
       { name: "Staff", value: "`,tilbud smart <beskrivelse>`", inline: false }
     );
 }
@@ -120,8 +117,13 @@ function buildInvoiceEmbed(data, { ownerTag, pendingPay } = {}) {
   return embed;
 }
 
-/** Læs faktura-screenshot — tæller løn ud fra kanal-ejer */
+/** Læs faktura-screenshot — i løn-kanaler skrives der ikke (brug /løn stats til embeds) */
 export async function processInvoiceImages(message, { loadingMessage = null } = {}) {
+  if (isSalaryChannel(message.channel)) {
+    if (loadingMessage) await loadingMessage.delete().catch(() => {});
+    return null;
+  }
+
   const urls = await collectMessageImageUrls(message);
   if (!urls.length) return null;
 
@@ -169,16 +171,34 @@ export async function processInvoiceImages(message, { loadingMessage = null } = 
 
 /** Parse lønbeløb fra eksisterende bot-embed i kanal-historik */
 export function parsePayrollFromBotEmbed(embed) {
-  const text = `${embed.title ?? ""}\n${embed.description ?? ""}`;
-  if (!/løn|udbetaling|lønsaldo/i.test(text)) return null;
+  const fieldsText = (embed.fields ?? []).map((f) => `${f.name}\n${f.value}`).join("\n");
+  const text = `${embed.title ?? ""}\n${embed.description ?? ""}\n${fieldsText}`;
+
+  if (/ingen udbetaling/i.test(text)) return null;
+  if (!/løn|lønsaldo|udbetaling|lønseddel/i.test(text)) return null;
+
+  const parseKr = (raw) => {
+    const n = String(raw)
+      .replace(/\*\*/g, "")
+      .replace(/kr\.?/gi, "")
+      .trim()
+      .replace(/\./g, "")
+      .replace(",", ".");
+    return Math.round(Number(n) || 0);
+  };
+
+  const addedMatch = text.match(/\*\*([\d.,]+)\s*kr\.?\*\*\s*tilføjet/i);
+  if (addedMatch) {
+    const employeePay = parseKr(addedMatch[1]);
+    let invoiceTotal = 0;
+    const totalMatch = text.match(/faktura\s+på\s+\*\*([\d.,]+)\s*kr\.?\*\*/i);
+    if (totalMatch) invoiceTotal = parseKr(totalMatch[1]);
+    else if (employeePay > 0) invoiceTotal = Math.round(employeePay / (JG_MARKUP_PERCENT / 100));
+    if (employeePay > 0) return { employeePay, invoiceTotal };
+  }
 
   const payMatch = text.match(/\*\*([\d.,]+)\s*kr\.?\*\*/gi);
   if (!payMatch?.length) return null;
-
-  const parseKr = (raw) => {
-    const n = raw.replace(/\*\*/g, "").replace(/kr\.?/gi, "").trim().replace(/\./g, "").replace(",", ".");
-    return Math.round(Number(n) || 0);
-  };
 
   const employeePay = parseKr(payMatch[0]);
   let invoiceTotal = 0;
@@ -188,26 +208,6 @@ export function parsePayrollFromBotEmbed(embed) {
 
   if (employeePay <= 0) return null;
   return { employeePay, invoiceTotal };
-}
-
-/** Scan faktura uden at svare i kanalen (til historik-backfill) */
-export async function scanInvoiceForPayroll(message, { silent = true } = {}) {
-  const urls = await collectMessageImageUrls(message);
-  if (!urls.length) return null;
-
-  const owner = resolveSalaryChannelOwner(message.guild, message.channel);
-  if (!owner?.userId) return null;
-
-  const raw = await groqVision(INVOICE_SCAN_PROMPT, urls, { json: true });
-  const data = parseJsonFromAi(raw);
-  const employeePay = resolveEmployeePay(data);
-  const invoiceTotal = resolveInvoiceTotal(data);
-
-  if (!silent) {
-    return processInvoiceImages(message);
-  }
-
-  return { data, employeePay, invoiceTotal, owner, messageId: message.id };
 }
 
 async function logPayrollToDashboard(message, data, employeePay, owner) {
@@ -231,6 +231,8 @@ async function logPayrollToDashboard(message, data, employeePay, owner) {
 }
 
 async function handleAiFaktura(message) {
+  if (isSalaryChannel(message.channel)) return true;
+
   if (!isStaffMember(message.member)) {
     await message.reply("❌ Kun staff kan tjekke faktura-screenshots.").catch(() => {});
     return true;
@@ -358,38 +360,9 @@ export async function handleTicketAi(message, rawArgs) {
   return true;
 }
 
-/** Auto: faktura-screenshot i #💰-løn-* kanaler */
-export async function tryAutoScanPayrollInvoice(message) {
-  if (!env.aiPayrollAutoScan || !isGroqConfigured()) return false;
-  if (!message.guild || message.author.bot) return false;
-  if (!isSalaryChannel(message.channel)) return false;
-  if (!messageHasImages(message)) return false;
-  if (payrollProcessedIds.has(message.id)) return false;
-
-  const content = message.content.trim();
-  if (content.startsWith(",")) return false;
-
-  const cd = checkCooldown(message.channel.id, "payroll-invoice-auto", PAYROLL_AUTO_COOLDOWN_MS);
-  if (!cd.allowed) return false;
-
-  payrollProcessedIds.add(message.id);
-  if (payrollProcessedIds.size > 500) {
-    const first = payrollProcessedIds.values().next().value;
-    payrollProcessedIds.delete(first);
-  }
-
-  const loading = await message.reply("💰 Aflæser lønbeløb…").catch(() => null);
-
-  try {
-    await processInvoiceImages(message, { loadingMessage: loading });
-    return true;
-  } catch (err) {
-    rootLogger.error("Auto løn-faktura fejlede", { error: err.message });
-    payrollProcessedIds.delete(message.id);
-    const msg = `❌ Auto faktura-scan fejlede: ${err.message}`;
-    if (loading) await loading.edit({ content: msg, embeds: [] }).catch(() => message.reply(msg));
-    return true;
-  }
+/** Auto-scan i løn-kanaler er slået fra — brug /løn stats (læser bot-embeds) */
+export async function tryAutoScanPayrollInvoice() {
+  return false;
 }
 
 /** Staff: ,tilbud smart <beskrivelse> */

@@ -1,6 +1,5 @@
 import { createLogger } from "../core/logger.js";
 import { env } from "../core/env.js";
-import { isGroqConfigured } from "../services/groqChat.js";
 import {
   isSalaryChannel,
   resolveSalaryChannelOwner,
@@ -10,19 +9,13 @@ import {
   registerPayrollEmployee,
   setEmployeeInvoices,
   getPayrollEmployee,
+  listPayrollEmployees,
 } from "../utils/payrollStore.js";
-import { messageHasImages } from "../utils/messageImages.js";
-import {
-  scanInvoiceForPayroll,
-  parsePayrollFromBotEmbed,
-} from "./ticketAiHandler.js";
+import { parsePayrollFromBotEmbed } from "./ticketAiHandler.js";
+import { createEmbed } from "../utils/brand.js";
+import { formatKr } from "../utils/quoteBuilder.js";
 
 const log = createLogger("payroll-backfill");
-const SCAN_DELAY_MS = 2500;
-
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
 
 async function fetchAllMessages(channel) {
   const all = [];
@@ -39,48 +32,62 @@ async function fetchAllMessages(channel) {
   return all.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
 }
 
-/** Find faktura-beskeder via eksisterende bot-svar i kanalen */
-function collectInvoicesFromBotHistory(messages, botId) {
-  const invoices = new Map();
-  const sorted = [...messages].sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+function parseKr(raw) {
+  const n = String(raw)
+    .replace(/\*\*/g, "")
+    .replace(/kr\.?/gi, "")
+    .trim()
+    .replace(/\./g, "")
+    .replace(",", ".");
+  return Math.round(Number(n) || 0);
+}
 
-  for (let i = 0; i < sorted.length; i++) {
-    const msg = sorted[i];
+/** Læs alle bot-embeds med lønbeløb i kanal-historik (ingen AI, ingen beskeder) */
+function collectInvoicesFromBotEmbeds(messages, botId) {
+  const invoices = [];
+
+  for (const msg of messages) {
     if (msg.author.id !== botId) continue;
 
-    const embed = msg.embeds.find((e) => e.title?.includes("Løn") || e.title?.includes("💰"));
-    if (!embed) continue;
+    for (let i = 0; i < msg.embeds.length; i++) {
+      const embed = msg.embeds[i];
+      const parsed = parsePayrollFromBotEmbed(embed);
+      if (!parsed || parsed.employeePay <= 0) continue;
 
-    const parsed = parsePayrollFromBotEmbed(embed);
-    if (!parsed || parsed.employeePay <= 0) continue;
-
-    let sourceMsg = null;
-    for (let j = i - 1; j >= 0 && j >= i - 5; j--) {
-      const prev = sorted[j];
-      if (prev.author.bot) continue;
-      if (messageHasImages(prev)) {
-        sourceMsg = prev;
-        break;
-      }
+      invoices.push({
+        messageId: `embed:${msg.id}:${i}`,
+        invoiceTotal: parsed.invoiceTotal,
+        employeePay: parsed.employeePay,
+        scannedById: "embed-historik",
+        scannedByTag: "Bot-embed",
+        date: new Date(msg.createdTimestamp).toISOString(),
+      });
     }
-
-    if (!sourceMsg) continue;
-
-    invoices.set(sourceMsg.id, {
-      messageId: sourceMsg.id,
-      invoiceTotal: parsed.invoiceTotal,
-      employeePay: parsed.employeePay,
-      scannedById: "backfill-embed",
-      scannedByTag: "Historik (bot-svar)",
-      date: new Date(sourceMsg.createdTimestamp).toISOString(),
-    });
   }
 
   return invoices;
 }
 
-/** Scan hele én løn-kanal og opdater payroll-store */
-export async function backfillSalaryChannel(channel, { useAi = true } = {}) {
+export function displayNameFromSalaryChannel(channel, owner, guild) {
+  const member = owner?.userId ? guild.members.cache.get(owner.userId) : null;
+  if (member?.displayName) return member.displayName;
+  if (owner?.userTag) return owner.userTag.split("#")[0];
+
+  const slug = channel.name
+    .replace(/^💰-?/i, "")
+    .replace(/^løn-/i, "")
+    .replace(/^lon-/i, "")
+    .replace(/-/g, " ");
+
+  if (!slug) return channel.name;
+  return slug
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** Læs bot-embeds i én løn-kanal og opdater store (skriver IKKE i kanalen) */
+export async function backfillSalaryChannel(channel) {
   const guild = channel.guild;
   if (!guild || !isSalaryChannel(channel)) {
     return { ok: false, error: "Ikke en løn-kanal" };
@@ -99,70 +106,35 @@ export async function backfillSalaryChannel(channel, { useAi = true } = {}) {
   });
 
   const messages = await fetchAllMessages(channel);
-  const invoiceMap = collectInvoicesFromBotHistory(messages, guild.client.user.id);
-
-  let aiScanned = 0;
-  let aiFailed = 0;
-
-  if (useAi && isGroqConfigured()) {
-    for (const msg of messages) {
-      if (msg.author.bot) continue;
-      if (!messageHasImages(msg)) continue;
-      if (invoiceMap.has(msg.id)) continue;
-
-      try {
-        const result = await scanInvoiceForPayroll(msg, { silent: true });
-        if (result?.employeePay > 0) {
-          invoiceMap.set(msg.id, {
-            messageId: msg.id,
-            invoiceTotal: result.invoiceTotal,
-            employeePay: result.employeePay,
-            scannedById: msg.author.id,
-            scannedByTag: msg.author.tag,
-            date: new Date(msg.createdTimestamp).toISOString(),
-          });
-          aiScanned++;
-        }
-        await sleep(SCAN_DELAY_MS);
-      } catch (err) {
-        aiFailed++;
-        log.warn(`AI-scan fejlede i #${channel.name}`, { messageId: msg.id, error: err.message });
-      }
-    }
-  }
-
-  const invoices = [...invoiceMap.values()].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-
+  const invoices = collectInvoicesFromBotEmbeds(messages, guild.client.user.id);
   const emp = setEmployeeInvoices(guild.id, owner.userId, invoices, { preservePaid: true });
 
   return {
     ok: true,
     channel: channel.name,
     owner: owner.userTag,
+    displayName: displayNameFromSalaryChannel(channel, owner, guild),
     invoices: invoices.length,
-    aiScanned,
-    aiFailed,
     pendingPay: emp?.pendingPay ?? 0,
   };
 }
 
-/** Scan alle løn-kanaler på serveren */
-export async function backfillAllSalaryChannels(guild, { useAi = true } = {}) {
+/** Læs alle løn-kanaler (kun embeds) */
+export async function backfillAllSalaryChannels(guild) {
   syncSalaryChannelsToStore(guild);
 
-  const channels = guild.channels.cache.filter((c) => isSalaryChannel(c));
+  const channels = [...guild.channels.cache.filter((c) => isSalaryChannel(c)).values()].sort((a, b) =>
+    a.name.localeCompare(b.name, "da")
+  );
+
   const results = [];
 
-  for (const channel of channels.values()) {
+  for (const channel of channels) {
     try {
-      const result = await backfillSalaryChannel(channel, { useAi });
+      const result = await backfillSalaryChannel(channel);
       results.push(result);
       if (result.ok) {
-        log.info(`#${result.channel}: ${result.invoices} fakturaer → ${result.pendingPay.toLocaleString("da-DK")} kr. udestående`);
-      } else {
-        log.warn(`#${channel.name}: ${result.error}`);
+        log.info(`#${result.channel}: ${result.invoices} embeds → ${result.pendingPay.toLocaleString("da-DK")} kr.`);
       }
     } catch (err) {
       log.error(`#${channel.name} fejlede`, { error: err.message });
@@ -179,7 +151,62 @@ export async function backfillAllSalaryChannels(guild, { useAi = true } = {}) {
   };
 }
 
-/** Kør baggrundsscan efter bot-start */
+/** Byg /løn stats embed */
+export async function buildPayrollStats(guild) {
+  const summary = await backfillAllSalaryChannels(guild);
+
+  const channels = [...guild.channels.cache.filter((c) => isSalaryChannel(c)).values()].sort((a, b) =>
+    a.name.localeCompare(b.name, "da")
+  );
+
+  const lines = [];
+  let totalPending = 0;
+
+  for (const channel of channels) {
+    const owner = resolveSalaryChannelOwner(guild, channel);
+    const name = displayNameFromSalaryChannel(channel, owner, guild);
+    const emp = owner ? getPayrollEmployee(guild.id, owner.userId) : null;
+    const pending = emp?.pendingPay ?? 0;
+    const count = emp?.invoices?.length ?? 0;
+
+    totalPending += pending;
+
+    if (pending > 0) {
+      lines.push(`**${name}** — ${formatKr(pending)} (${count} faktura${count === 1 ? "" : "er"})`);
+    } else {
+      lines.push(`**${name}** — Intet`);
+    }
+  }
+
+  if (!lines.length) {
+    const stored = listPayrollEmployees(guild.id);
+    for (const emp of stored) {
+      const pending = emp.pendingPay ?? 0;
+      totalPending += pending;
+      const name = emp.userTag?.split("#")[0] ?? emp.userId;
+      lines.push(pending > 0 ? `**${name}** — ${formatKr(pending)}` : `**${name}** — Intet`);
+    }
+  }
+
+  const embed = createEmbed("gold")
+    .setTitle("💰 Løn-oversigt")
+    .setDescription(
+      lines.length
+        ? lines.join("\n")
+        : "Ingen løn-kanaler fundet."
+    )
+    .addFields({
+      name: "Total udestående",
+      value: totalPending > 0 ? `**${formatKr(totalPending)}**` : "**Intet**",
+      inline: false,
+    })
+    .setFooter({ text: `Læst fra bot-embeds i ${summary.synced} kanaler · opdateres via /løn stats` })
+    .setTimestamp();
+
+  return { embed, summary, totalPending };
+}
+
+/** Baggrundssync ved opstart — kun embeds, ingen kanal-beskeder */
 export function startPayrollBackfillOnReady(client) {
   if (!env.payrollBackfillOnStart) return;
 
@@ -188,13 +215,10 @@ export function startPayrollBackfillOnReady(client) {
   if (!guild) return;
 
   setTimeout(() => {
-    backfillAllSalaryChannels(guild, { useAi: isGroqConfigured() })
+    backfillAllSalaryChannels(guild)
       .then((summary) => {
-        log.info("Løn-historik opdateret", {
-          kanaler: summary.synced,
-          fakturaer: summary.totalInvoices,
-        });
+        log.info("Løn-embeds indlæst", { kanaler: summary.synced, fakturaer: summary.totalInvoices });
       })
-      .catch((err) => log.error("Backfill fejlede", { error: err.message }));
+      .catch((err) => log.error("Embed-backfill fejlede", { error: err.message }));
   }, 15_000);
 }
