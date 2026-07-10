@@ -1,0 +1,46 @@
+PROBLEM: Filer med backslash i navnet (fx "handlers\file.js") er FORKERT!
+Linux opretter ikke mapper af dem — det er én fil med \ i navnet.
+
+═══════════════════════════════════════════════════════════
+  LILLE OPDATERING (fx ,nickname) — ANBEFALET
+═══════════════════════════════════════════════════════════
+
+Upload KUN filerne fra bennys-update-nickname/ (eller bennys-update-med-ejer/).
+Rør IKKE data/ — ansøgninger, tickets og indstillinger ligger der.
+
+Stop → Start botten. Ingen /setup. Ingen deploy-commands (medmindre slash-kommandoer ændret).
+
+═══════════════════════════════════════════════════════════
+  FØRSTE GANG / FULD GENINSTALLATION
+═══════════════════════════════════════════════════════════
+
+1) SLET ALT i File Manager (alle filer med \ i navnet + gammel zip)
+   UNDTAGEN: behold data/ og .env hvis de allerede findes!
+
+2) Upload KUN:
+   bennys-host-linux.tar.gz
+   (c:\Users\Benja\Bennys\bennys-host-linux.tar.gz)
+
+   Bemærk: tar.gz indeholder IKKE data/*.json — din servers data bevares.
+
+3) Console:
+   cd /home/container
+   tar -xzf bennys-host-linux.tar.gz
+   ls handlers/
+
+4) .env skal findes (opret hvis ny server):
+   DISCORD_TOKEN=...
+   DISCORD_CLIENT_ID=...
+   DISCORD_GUILD_ID=...
+   MESSAGE_CONTENT=true
+   MEMBER_INTENT=true
+
+5) Console:
+   npm install
+   npm run deploy-commands
+
+6) Startup → BOT_JS_FILE = index.js → Start
+
+HVIS tar fejler:
+   apt-get update && apt-get install -y unzip
+   unzip -o bennys-host-linux.zip

@@ -1,0 +1,3 @@
+# Runtime data — bevares på serveren ved opdatering
+data/*.json
+.env
