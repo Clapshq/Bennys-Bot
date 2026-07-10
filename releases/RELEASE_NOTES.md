@@ -3,7 +3,9 @@
 **Fil:** `bennys-upload-linux-LATEST.tar.gz`
 
 ### Nyheder
-- `/løn opret`, `/løn remove`, `/udbetal`
+- `/løn opret`, `/løn remove`, `/løn stats`, `/udbetal`
+- **`/løn stats`** — viser hver medarbejder + løn (eller **Intet**), læst fra bot-embeds
+- Ingen beløb eller AI-beskeder i løn-kanaler
 - Lønsaldo i `data/payroll.json` (bevares ved opdatering)
 - Faktura tælles på løn-kanal-ejer
 - Generelt support i `#kontakt`
