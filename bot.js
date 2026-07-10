@@ -38,6 +38,7 @@ import { trackMessage, cacheDeletedMessage } from "./handlers/snipeHandler.js";
 import { handleAntiNuke } from "./security/antiNuke.js";
 import { registerPricePanelAutoRefresh, refreshStoredPricePanel } from "./handlers/pricePanelHandler.js";
 import { syncSalaryChannelsToStore } from "./handlers/salaryHandler.js";
+import { handlePayrollMessageDelete } from "./handlers/payrollMessageHandler.js";
 import { startPayrollBackfillOnReady } from "./handlers/payrollBackfill.js";
 import { startDashboardSync, requestDashboardSync } from "./services/dashboardSync.js";
 import { startDashboardCommandProcessor } from "./services/dashboardCommands.js";
@@ -213,10 +214,9 @@ client.on(Events.MessageCreate, async (message) => {
 
 
 
-client.on(Events.MessageDelete, (message) => {
-
+client.on(Events.MessageDelete, async (message) => {
   cacheDeletedMessage(message);
-
+  await handlePayrollMessageDelete(message).catch(() => {});
 });
 
 

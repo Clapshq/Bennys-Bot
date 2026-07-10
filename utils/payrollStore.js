@@ -136,6 +136,61 @@ export function addPayrollInvoice(guildId, channelId, {
   return emp;
 }
 
+export function removePayrollInvoicesForDeletedMessage(guildId, channelId, { sourceMessageId, botMessageId } = {}) {
+  const data = readStore();
+  const empKey = data.byChannel[channelKey(guildId, channelId)];
+  if (!empKey || !data.employees[empKey]) return null;
+
+  const emp = data.employees[empKey];
+  const before = emp.invoices?.length ?? 0;
+
+  emp.invoices = (emp.invoices ?? []).filter((inv) => {
+    if (sourceMessageId && inv.sourceMessageId === sourceMessageId) return false;
+    if (botMessageId) {
+      if (inv.botMessageId === botMessageId) return false;
+      if (inv.messageId === `embed:${botMessageId}:0` || inv.messageId?.startsWith(`embed:${botMessageId}:`)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  if (emp.invoices.length !== before) {
+    recalculatePayrollBalance(emp);
+    emp.updatedAt = new Date().toISOString();
+    writeStore(data, true);
+  }
+
+  return emp;
+}
+
+/** Husk slettede upload-beskeder så sync ikke tæller dem igen */
+export function trackDeletedPayrollUpload(guildId, channelId, messageId) {
+  if (!messageId) return null;
+
+  const data = readStore();
+  const empKey = data.byChannel[channelKey(guildId, channelId)];
+  if (!empKey || !data.employees[empKey]) return null;
+
+  const emp = data.employees[empKey];
+  if (!emp.deletedUploadIds) emp.deletedUploadIds = [];
+  if (!emp.deletedUploadIds.includes(messageId)) {
+    emp.deletedUploadIds.push(messageId);
+    if (emp.deletedUploadIds.length > 500) {
+      emp.deletedUploadIds = emp.deletedUploadIds.slice(-500);
+    }
+    emp.updatedAt = new Date().toISOString();
+    writeStore(data, true);
+  }
+
+  return emp;
+}
+
+export function isDeletedPayrollUpload(guildId, channelId, messageId) {
+  const emp = getPayrollEmployeeByChannel(guildId, channelId);
+  return Boolean(messageId && emp?.deletedUploadIds?.includes(messageId));
+}
+
 export function payoutPayrollEmployee(guildId, userId, { paidById, paidByTag } = {}) {
   const data = readStore();
   const key = employeeKey(guildId, userId);

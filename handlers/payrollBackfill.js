@@ -8,7 +8,9 @@ import {
   registerPayrollEmployee,
   setEmployeeInvoices,
   getPayrollEmployee,
+  getPayrollEmployeeByChannel,
   listPayrollEmployees,
+  isDeletedPayrollUpload,
 } from "../utils/payrollStore.js";
 import { parsePayrollFromBotEmbed } from "./ticketAiHandler.js";
 import { createEmbed } from "../utils/brand.js";
@@ -41,12 +43,23 @@ function parseKr(raw) {
   return Math.round(Number(n) || 0);
 }
 
-/** Læs alle bot-embeds med lønbeløb i kanal-historik (ingen AI, ingen beskeder) */
-function collectInvoicesFromBotEmbeds(messages, botId) {
+/** Læs bot-embeds — spring over hvis upload-billedet er slettet */
+async function collectInvoicesFromBotEmbeds(messages, botId, channel, guildId) {
   const invoices = [];
+  const messageIds = new Set(messages.map((m) => m.id));
 
   for (const msg of messages) {
     if (msg.author.id !== botId) continue;
+
+    const sourceMessageId = msg.reference?.messageId ?? null;
+    if (sourceMessageId) {
+      if (isDeletedPayrollUpload(guildId, channel.id, sourceMessageId)) continue;
+
+      if (!messageIds.has(sourceMessageId)) {
+        const parent = await channel.messages.fetch(sourceMessageId).catch(() => null);
+        if (!parent) continue;
+      }
+    }
 
     for (let i = 0; i < msg.embeds.length; i++) {
       const embed = msg.embeds[i];
@@ -55,6 +68,8 @@ function collectInvoicesFromBotEmbeds(messages, botId) {
 
       invoices.push({
         messageId: `embed:${msg.id}:${i}`,
+        botMessageId: msg.id,
+        sourceMessageId,
         invoiceTotal: parsed.invoiceTotal,
         employeePay: parsed.employeePay,
         scannedById: "embed-historik",
@@ -112,7 +127,7 @@ export async function backfillSalaryChannel(channel) {
   });
 
   const messages = await fetchAllMessages(channel);
-  const invoices = collectInvoicesFromBotEmbeds(messages, guild.client.user.id);
+  const invoices = await collectInvoicesFromBotEmbeds(messages, guild.client.user.id, channel, guild.id);
   const emp = setEmployeeInvoices(guild.id, owner.userId, invoices, { preservePaid: true });
 
   return {
