@@ -43,4 +43,7 @@ EOF
 echo "✅ Pakket:"
 echo "   $LATEST"
 echo "   $VERSIONED"
+echo ""
+echo "📦 GitHub Release (valgfrit):"
+echo "   gh release create vYYYY.MM.DD $LATEST --title '...' --notes-file releases/RELEASE_NOTES.md --latest"
 ls -lh "$LATEST"
