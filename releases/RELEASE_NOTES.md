@@ -4,10 +4,10 @@
 
 ### Nyheder
 - `/løn opret`, `/løn remove`, `/løn stats`, `/udbetal`
-- **`/løn stats`** — viser hver medarbejder + løn (eller **Intet**), læst fra bot-embeds
+- **`/løn stats`** — offentlig i kanalen, præcise navne (fx Simon) + løn eller **Intet**
+- **`/udbetal`** — udbetalings-embed i medarbejderens løn-kanal
 - **Auto-sync ved opstart** — læser alle løn-embeds ~2 sek. efter botten er online
-- Ingen beløb eller AI-beskeder i løn-kanaler
-- Lønsaldo i `data/payroll.json` (bevares ved opdatering)
+- Udbetalinger huskes i `data/payroll.json` (bevares ved opdatering)
 - Faktura tælles på løn-kanal-ejer
 - Generelt support i `#kontakt`
 - Staff notes fix i tickets

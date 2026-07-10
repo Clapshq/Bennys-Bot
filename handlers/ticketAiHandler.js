@@ -173,16 +173,22 @@ export async function processInvoiceImages(message, { loadingMessage = null } = 
 export function parsePayrollFromBotEmbed(embed) {
   const fieldsText = (embed.fields ?? []).map((f) => `${f.name}\n${f.value}`).join("\n");
   const text = `${embed.title ?? ""}\n${embed.description ?? ""}\n${fieldsText}`;
+  const title = (embed.title ?? "").trim();
+
+  // Velkomst / kanal-info (personalSalaryEmbed) — ikke en faktura
+  if (/løn-kanal\s*—/i.test(title)) return null;
+  if (/personlige faktura-kanal|upload faktura her|profit per ordre|kun dig og ledelsen/i.test(text)) {
+    return null;
+  }
 
   if (/ingen udbetaling/i.test(text)) return null;
   if (/er udbetalt|løntælleren er nulstillet|udbetalt af/i.test(text)) return null;
-  if (/^💰\s*udbetaling/i.test(embed.title ?? "")) return null;
-  if (!/løn|lønsaldo|lønseddel/i.test(text)) return null;
-  if (/tilføjet til lønsaldo/i.test(text)) {
-    // faktura-embed — fortsæt
-  } else if (/udbetaling/i.test(text)) {
-    return null;
-  }
+  if (/^💰\s*udbetaling/i.test(title)) return null;
+
+  const isInvoiceEmbed =
+    /tilføjet til lønsaldo/i.test(text) || /^💰\s*løn$/i.test(title);
+
+  if (!isInvoiceEmbed) return null;
 
   const parseKr = (raw) => {
     const n = String(raw)
@@ -204,17 +210,7 @@ export function parsePayrollFromBotEmbed(embed) {
     if (employeePay > 0) return { employeePay, invoiceTotal };
   }
 
-  const payMatch = text.match(/\*\*([\d.,]+)\s*kr\.?\*\*/gi);
-  if (!payMatch?.length) return null;
-
-  const employeePay = parseKr(payMatch[0]);
-  let invoiceTotal = 0;
-  const totalMatch = text.match(/faktura\s+på\s+\*\*([\d.,]+)\s*kr\.?\*\*/i);
-  if (totalMatch) invoiceTotal = parseKr(totalMatch[1]);
-  else if (employeePay > 0) invoiceTotal = Math.round(employeePay / (JG_MARKUP_PERCENT / 100));
-
-  if (employeePay <= 0) return null;
-  return { employeePay, invoiceTotal };
+  return null;
 }
 
 async function logPayrollToDashboard(message, data, employeePay, owner) {
