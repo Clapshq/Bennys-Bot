@@ -1,0 +1,22 @@
+╔══════════════════════════════════════════════════════════════╗
+║  BENNY'S BOT — HVOR ER UPLOAD-FILEN?                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+  Gå til mappen:
+
+      releases/
+
+  Download og upload til Cybrancee:
+
+      releases/bennys-upload-linux-LATEST.tar.gz
+
+  ─────────────────────────────────────────────────────────────
+
+  På serveren (/home/container):
+
+      tar -xzf bennys-upload-linux-LATEST.tar.gz
+      npm run deploy-commands
+
+  VIGTIGT: Behold data/ og .env — overskriv dem IKKE!
+
+  Fuld guide: START-HER.txt (ligger inde i tar.gz)

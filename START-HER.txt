@@ -10,11 +10,11 @@ VIGTIGT: Behold .env og data/ på serveren — overskriv dem IKKE!
 
 1) Stop botten i panelet
 
-2) Upload bennys-upload-linux.tar.gz til /home/container
+2) Upload **releases/bennys-upload-linux-LATEST.tar.gz** til /home/container
 
 3) I konsollen:
      cd /home/container
-     tar -xzf bennys-upload-linux.tar.gz
+     tar -xzf bennys-upload-linux-LATEST.tar.gz
 
 4) Tjek .env — tilføj AI-nøgle (se nedenfor) hvis den mangler
 

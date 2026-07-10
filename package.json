@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "deploy-commands": "node deploy-commands.js"
+    "deploy-commands": "node deploy-commands.js",
+    "pack": "bash scripts/pack-release.sh"
   },
   "engines": {
     "node": ">=18.0.0"
