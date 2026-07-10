@@ -1,5 +1,4 @@
 import { createLogger } from "../core/logger.js";
-import { env } from "../core/env.js";
 import {
   isSalaryChannel,
   resolveSalaryChannelOwner,
@@ -206,19 +205,26 @@ export async function buildPayrollStats(guild) {
   return { embed, summary, totalPending };
 }
 
-/** Baggrundssync ved opstart — kun embeds, ingen kanal-beskeder */
+/** Baggrundssync ved opstart — læser bot-embeds, skriver ikke i kanaler */
 export function startPayrollBackfillOnReady(client) {
-  if (!env.payrollBackfillOnStart) return;
+  const guilds = [...client.guilds.cache.values()];
+  if (!guilds.length) return;
 
-  const guildId = env.guildId;
-  const guild = guildId ? client.guilds.cache.get(guildId) : client.guilds.cache.first();
-  if (!guild) return;
+  log.info("Løn-sync planlagt ved opstart", { guilds: guilds.length });
 
-  setTimeout(() => {
-    backfillAllSalaryChannels(guild)
-      .then((summary) => {
-        log.info("Løn-embeds indlæst", { kanaler: summary.synced, fakturaer: summary.totalInvoices });
-      })
-      .catch((err) => log.error("Embed-backfill fejlede", { error: err.message }));
-  }, 15_000);
+  const run = () => {
+    for (const guild of guilds) {
+      backfillAllSalaryChannels(guild)
+        .then((summary) => {
+          log.info("Løn synket ved opstart", {
+            guild: guild.id,
+            kanaler: summary.synced,
+            fakturaer: summary.totalInvoices,
+          });
+        })
+        .catch((err) => log.error("Opstarts-sync fejlede", { guild: guild.id, error: err.message }));
+    }
+  };
+
+  setTimeout(run, 2_000);
 }
