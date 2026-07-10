@@ -169,26 +169,30 @@ export async function processInvoiceImages(message, { loadingMessage = null } = 
   return { data, employeePay, owner, pendingPay: updated?.pendingPay ?? 0 };
 }
 
+/** Velkomst-besked ved oprettelse af løn-kanal — ikke en faktura */
+function isWelcomeSalaryEmbed(title, text) {
+  if (/løn-kanal\s*—/i.test(title)) return true;
+  if (/personlige faktura-kanal|upload faktura her|profit per ordre|kun dig og ledelsen/i.test(text)) {
+    return true;
+  }
+  return false;
+}
+
+function isPayoutSalaryEmbed(title, text) {
+  if (/^💰\s*udbetaling/i.test(title)) return true;
+  if (/er udbetalt|løntælleren er nulstillet|udbetalt af/i.test(text)) return true;
+  if (/ingen udbetaling/i.test(text)) return true;
+  return false;
+}
+
 /** Parse lønbeløb fra eksisterende bot-embed i kanal-historik */
 export function parsePayrollFromBotEmbed(embed) {
   const fieldsText = (embed.fields ?? []).map((f) => `${f.name}\n${f.value}`).join("\n");
   const text = `${embed.title ?? ""}\n${embed.description ?? ""}\n${fieldsText}`;
   const title = (embed.title ?? "").trim();
 
-  // Velkomst / kanal-info (personalSalaryEmbed) — ikke en faktura
-  if (/løn-kanal\s*—/i.test(title)) return null;
-  if (/personlige faktura-kanal|upload faktura her|profit per ordre|kun dig og ledelsen/i.test(text)) {
-    return null;
-  }
-
-  if (/ingen udbetaling/i.test(text)) return null;
-  if (/er udbetalt|løntælleren er nulstillet|udbetalt af/i.test(text)) return null;
-  if (/^💰\s*udbetaling/i.test(title)) return null;
-
-  const isInvoiceEmbed =
-    /tilføjet til lønsaldo/i.test(text) || /^💰\s*løn$/i.test(title);
-
-  if (!isInvoiceEmbed) return null;
+  if (isWelcomeSalaryEmbed(title, text)) return null;
+  if (isPayoutSalaryEmbed(title, text)) return null;
 
   const parseKr = (raw) => {
     const n = String(raw)
@@ -200,14 +204,33 @@ export function parsePayrollFromBotEmbed(embed) {
     return Math.round(Number(n) || 0);
   };
 
-  const addedMatch = text.match(/\*\*([\d.,]+)\s*kr\.?\*\*\s*tilføjet/i);
+  // Faktura-embed: "1.500 kr. tilføjet til lønsaldo" (med eller uden Discord-markdown)
+  const addedMatch =
+    text.match(/\*\*([\d.,]+)\s*kr\.?\*\*\s*tilføjet/i) ||
+    text.match(/([\d.,]+)\s*kr\.?\s*tilføjet\s+til\s+lønsaldo/i);
+
   if (addedMatch) {
     const employeePay = parseKr(addedMatch[1]);
     let invoiceTotal = 0;
-    const totalMatch = text.match(/faktura\s+på\s+\*\*([\d.,]+)\s*kr\.?\*\*/i);
+    const totalMatch =
+      text.match(/faktura\s+på\s+\*\*([\d.,]+)\s*kr\.?\*\*/i) ||
+      text.match(/faktura\s+på\s+([\d.,]+)\s*kr\.?/i);
     if (totalMatch) invoiceTotal = parseKr(totalMatch[1]);
     else if (employeePay > 0) invoiceTotal = Math.round(employeePay / (JG_MARKUP_PERCENT / 100));
     if (employeePay > 0) return { employeePay, invoiceTotal };
+  }
+
+  // Ældre/alternative faktura-embeds med titel "💰 Løn"
+  if (/^💰\s*løn$/i.test(title) && /faktura|lønsaldo|lønbeløb/i.test(text)) {
+    const payMatch = text.match(/(?:\*\*)?([\d.,]+)\s*kr\.?(?:\*\*)?/i);
+    if (payMatch) {
+      const employeePay = parseKr(payMatch[1]);
+      let invoiceTotal = 0;
+      const totalMatch = text.match(/faktura\s+på\s+(?:\*\*)?([\d.,]+)\s*kr\.?(?:\*\*)?/i);
+      if (totalMatch) invoiceTotal = parseKr(totalMatch[1]);
+      else if (employeePay > 0) invoiceTotal = Math.round(employeePay / (JG_MARKUP_PERCENT / 100));
+      if (employeePay > 0) return { employeePay, invoiceTotal };
+    }
   }
 
   return null;
