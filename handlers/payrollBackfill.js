@@ -68,21 +68,28 @@ function collectInvoicesFromBotEmbeds(messages, botId) {
 }
 
 export function displayNameFromSalaryChannel(channel, owner, guild) {
+  const slug = (channel?.name ?? "")
+    .replace(/^💰-?/i, "")
+    .replace(/^løn-/i, "")
+    .replace(/^lon-/i, "");
+
+  if (slug) {
+    return slug
+      .split("-")
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  }
+
   const member = owner?.userId ? guild.members.cache.get(owner.userId) : null;
   if (member?.displayName) return member.displayName;
   if (owner?.userTag) return owner.userTag.split("#")[0];
+  return channel?.name ?? "Ukendt";
+}
 
-  const slug = channel.name
-    .replace(/^💰-?/i, "")
-    .replace(/^løn-/i, "")
-    .replace(/^lon-/i, "")
-    .replace(/-/g, " ");
-
-  if (!slug) return channel.name;
-  return slug
-    .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+function formatBilleder(count) {
+  if (count === 1) return "1 billede";
+  return `${count} billeder`;
 }
 
 /** Læs bot-embeds i én løn-kanal og opdater store (skriver IKKE i kanalen) */
@@ -171,7 +178,7 @@ export async function buildPayrollStats(guild) {
     totalPending += pending;
 
     if (pending > 0) {
-      lines.push(`**${name}** — ${formatKr(pending)} (${count} faktura${count === 1 ? "" : "er"})`);
+      lines.push(`**${name}** — ${formatKr(pending)} (${formatBilleder(count)})`);
     } else {
       lines.push(`**${name}** — Intet`);
     }
@@ -199,7 +206,7 @@ export async function buildPayrollStats(guild) {
       value: totalPending > 0 ? `**${formatKr(totalPending)}**` : "**Intet**",
       inline: false,
     })
-    .setFooter({ text: `Læst fra bot-embeds i ${summary.synced} kanaler · opdateres via /løn stats` })
+    .setFooter({ text: `Opdateret · udbetalinger huskes i systemet` })
     .setTimestamp();
 
   return { embed, summary, totalPending };

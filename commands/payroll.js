@@ -103,7 +103,7 @@ export const lonCommandExport = {
     }
 
     if (sub === "stats") {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      await interaction.deferReply();
       await interaction.editReply({ content: "⏳ Læser bot-embeds fra alle løn-kanaler…" });
 
       const { embed } = await buildPayrollStats(interaction.guild);

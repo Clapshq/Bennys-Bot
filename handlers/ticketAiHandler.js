@@ -175,7 +175,14 @@ export function parsePayrollFromBotEmbed(embed) {
   const text = `${embed.title ?? ""}\n${embed.description ?? ""}\n${fieldsText}`;
 
   if (/ingen udbetaling/i.test(text)) return null;
-  if (!/løn|lønsaldo|udbetaling|lønseddel/i.test(text)) return null;
+  if (/er udbetalt|løntælleren er nulstillet|udbetalt af/i.test(text)) return null;
+  if (/^💰\s*udbetaling/i.test(embed.title ?? "")) return null;
+  if (!/løn|lønsaldo|lønseddel/i.test(text)) return null;
+  if (/tilføjet til lønsaldo/i.test(text)) {
+    // faktura-embed — fortsæt
+  } else if (/udbetaling/i.test(text)) {
+    return null;
+  }
 
   const parseKr = (raw) => {
     const n = String(raw)
