@@ -10,23 +10,23 @@ VIGTIGT: Behold .env og data/ på serveren — overskriv dem IKKE!
 
 1) Stop botten i panelet
 
-2) Upload **releases/bennys-upload-linux-LATEST.tar.gz** til /home/container
+2) Upload **releases/bennys-upload-linux-LATEST.tar.gz** til /home/container (File Manager)
 
-3) I konsollen:
+   Du behøver IKKE slette handlers/commands — botten overskriver automatisk ved start.
+
+3) I konsollen (kun hvis du har adgang — ellers spring over):
      cd /home/container
-     tar -xzf bennys-upload-linux-LATEST.tar.gz
 
 4) Tjek .env — tilføj AI-nøgle (se nedenfor) hvis den mangler
 
-5) Kør én gang i konsollen (nye slash-kommandoer):
-     npm run deploy-commands
+5) Start botten med **npm start** (ikke node index.js)
 
-   ELLER: spring over — botten registrerer kommandoer AUTOMATISK ved start
-   (standard fra denne version)
+   Ved første start efter upload:
+   • sletter gamle handlers, commands, utils osv.
+   • udpakker tar.gz
+   • genstarter og registrerer slash-kommandoer automatisk
 
-6) Start botten
-
-7) Test i Discord:
+6) Test i Discord:
      /løn opret @medarbejder   (ledelse)
      /udbetal @medarbejder     (ledelse)
      ,panels refresh tickets   (opdater #kontakt med Generelt support)

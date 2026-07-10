@@ -16,17 +16,14 @@ Upload filen til Cybrancee (`/home/container`).
 
 ---
 
-## Hurtig install på server
+## Upload uden konsol
 
-```bash
-cd /home/container
-tar -xzf bennys-upload-linux-LATEST.tar.gz
-npm run deploy-commands
-```
+1. **Stop** botten  
+2. **Upload** `bennys-upload-linux-LATEST.tar.gz` til `/home/container` (File Manager)  
+3. **Behold** `data/` og `.env` — slet ikke manuelt handlers/commands  
+4. **Start** botten (`npm start`) — den **sletter og overskriver** kode automatisk  
 
-**Vigtigt:** Behold `data/` og `.env` på serveren — overskriv dem ikke.
-
-Fuld guide ligger i `START-HER.txt` inde i arkivet.
+Se **[UPLOAD-UDEN-KONSOL.txt](UPLOAD-UDEN-KONSOL.txt)**
 
 ---
 

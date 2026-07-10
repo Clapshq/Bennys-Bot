@@ -8,15 +8,17 @@
 - Faktura tælles på løn-kanal-ejer
 - Generelt support i `#kontakt`
 - Staff notes fix i tickets
+- **Auto-overwrite:** upload tar.gz → start botten → handlers/commands overskrives selv
 
-### Upload uden konsol
+### Upload (ingen konsol)
+
 1. Stop botten
-2. File Manager → upload tar.gz → **Extract**
+2. File Manager → upload `bennys-upload-linux-LATEST.tar.gz`
 3. Behold `data/` og `.env`
-4. Start botten
+4. Start med `npm start`
 
-**Slash-kommandoer registreres automatisk ved start** — ingen `deploy-commands` nødvendig.
+Botten sletter og genopbygger `handlers`, `commands`, `utils`, `core` osv. automatisk.
 
-Tjek at `BENNYS-BOT.txt` findes efter upload.
+Slash-kommandoer registreres ved hver start.
 
-Se `START-HER.txt` i arkivet for fuld guide.
+Se `UPLOAD-UDEN-KONSOL.txt` i arkivet.
