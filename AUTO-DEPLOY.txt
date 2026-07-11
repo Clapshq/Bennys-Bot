@@ -1,0 +1,50 @@
+═══════════════════════════════════════════════════════════════
+  AUTO-DEPLOY — Dashboard + Bot release
+═══════════════════════════════════════════════════════════════
+
+Alt deployer automatisk efter ÉN-GANGS setup.
+
+───────────────────────────────────────────────────────────────
+  DASHBOARD (Vercel) — auto ved push til main
+───────────────────────────────────────────────────────────────
+
+1. Kør én gang (lokalt med Vercel CLI):
+   npm i -g vercel
+   ./scripts/setup-vercel-once.sh
+
+2. Tilføj GitHub Secrets (Repo → Settings → Secrets → Actions):
+   • VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+   • NEXT_PUBLIC_APP_URL, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET
+   • DISCORD_GUILD_ID, DISCORD_BOT_TOKEN
+   • SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+   • SESSION_SECRET (min 32 tegn)
+   • DASHBOARD_STAFF_ROLES (valgfrit)
+
+3. Push til main → GitHub Actions deployer dashboard til Vercel.
+
+Workflow: .github/workflows/deploy-dashboard.yml
+
+───────────────────────────────────────────────────────────────
+  BOT (Cybrancee) — auto GitHub Release ved push til main
+───────────────────────────────────────────────────────────────
+
+Push til main → GitHub Actions pakker tar.gz og uploader til Releases.
+
+Download (altid seneste):
+  https://github.com/Clapshq/Bennys-Bot/releases/latest/download/bennys-upload-linux-LATEST.tar.gz
+
+Upload til Cybrancee File Manager → start bot (auto-overwrite som før).
+
+Workflow: .github/workflows/release-bot.yml
+
+───────────────────────────────────────────────────────────────
+  BOT på serveren — allerede automatisk
+───────────────────────────────────────────────────────────────
+
+Upload tar.gz → bot udpakker og genstarter selv ved næste start.
+
+Bot .env (én gang på server):
+  DASHBOARD_ENABLED=true
+  DASHBOARD_APP_URL=https://din-vercel-url.vercel.app
+
+═══════════════════════════════════════════════════════════════
