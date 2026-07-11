@@ -15,7 +15,6 @@ VERSIONED="$RELEASE_DIR/bennys-upload-linux-${STAMP}.tar.gz"
 tar -czf "$LATEST" \
   --exclude='./.git' \
   --exclude='./releases' \
-  --exclude='./dashboard' \
   --exclude='./bennys-upload-linux.tar.gz' \
   --exclude='./data/*.json' \
   --exclude='./.gitignore' \

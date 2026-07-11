@@ -1,5 +1,0 @@
-Variabler er allerede sat på Vercel-projektet "Dashboard".
-
-Efter merge: Root Directory = dashboard → Redeploy.
-
-Se DASHBOARD-SIMPELT.txt i repo-roden.
