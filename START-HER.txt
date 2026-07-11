@@ -1,0 +1,117 @@
+╔══════════════════════════════════════════════════════════════╗
+║  BENNY'S — UPLOAD (løn + support + tickets)                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+VIGTIGT: Behold .env og data/ på serveren — overskriv dem IKKE!
+
+═══════════════════════════════════════════════════════════════
+ OPGRADERING (Cybrancee)
+═══════════════════════════════════════════════════════════════
+
+1) Stop botten i panelet
+
+2) Upload **releases/bennys-upload-linux-LATEST.tar.gz** til /home/container (File Manager)
+
+   Du behøver IKKE slette handlers/commands — botten overskriver automatisk ved start.
+
+3) I konsollen (kun hvis du har adgang — ellers spring over):
+     cd /home/container
+
+4) Tjek .env — tilføj AI-nøgle (se nedenfor) hvis den mangler
+
+5) Start botten med **npm start** (ikke node index.js)
+
+   Ved første start efter upload:
+   • sletter gamle handlers, commands, utils osv.
+   • udpakker tar.gz
+   • genstarter og registrerer slash-kommandoer automatisk
+
+6) Test i Discord:
+     /løn opret @medarbejder   (ledelse)
+     /udbetal @medarbejder     (ledelse)
+     ,panels refresh tickets   (opdater #kontakt med Generelt support)
+     ,pris panel               (ledelse — i #ordrer-og-løn)
+
+═══════════════════════════════════════════════════════════════
+ .env — AI (PÅKRÆVET for AI-funktioner)
+═══════════════════════════════════════════════════════════════
+
+Åbn .env på serveren og tilføj:
+
+GROQ_API_KEY=gsk_din_nøgle_her
+
+Gratis nøgle: https://console.groq.com
+
+Valgfrit:
+PRIS_AUTO_SCAN=true
+AI_PAYROLL_AUTO_SCAN=true
+PRIS_SCAN_CHANNELS=ordrer-og-løn,ledelse
+
+Gem .env og genstart botten.
+
+═══════════════════════════════════════════════════════════════
+ NYE FUNKTIONER
+═══════════════════════════════════════════════════════════════
+
+Løn (slash — kræver deploy-commands):
+  /løn opret @medarbejder      — opret personlig #💰-løn-kanal
+  /løn remove @medarbejder     — slet kanal + fjern fra lønsystem
+  /udbetal @bruger             — vis beløb, nulstil løntæller efter udbetaling
+
+Løn (automatisk):
+  • Faktura i #💰-løn-[navn] → tælles på **kanal-ejer** (ikke afsender)
+  • Saldo gemmes i data/payroll.json — bevares ved opdatering
+
+Tickets:
+  • #kontakt → ny type: **Generelt support**
+  • Staff notes virker igen (vises i ticket + #ticket-logs)
+
+AI & priser (prefix):
+  ,ai <spørgsmål>              — staff overalt, kunder i tickets
+  ,ai tilbud V8 og bremser     — beregner kundepris
+  ,tilbud smart …              — samme (staff)
+  ,pris idag                   — dagens shop-priser
+  ,pris panel                  — interaktiv pris-editor (ledelse)
+
+Automatisk:
+  • Shop-screenshot i #ordrer-og-løn → AI læser priser
+  • Faktura-billede i #💰-løn-[navn] → AI beregner automatisk
+  • Prispanel opdateres selv når priser ændres
+
+Panels:
+  ,panels refresh              — opdater Discord-paneler
+
+═══════════════════════════════════════════════════════════════
+ FØRSTE GANG EFTER AI-UPDATE
+═══════════════════════════════════════════════════════════════
+
+1) Ledelse: post JG shop-screenshot(s) i #ordrer-og-løn
+   → shop-priser gemmes automatisk
+
+2) Ledelse: ,pris panel i #ordrer-og-løn → pin panelet
+   → opdater motorpriser ved klik (V8, V6 osv.)
+
+3) Staff: ,ai tilbud … i ticket eller ,pris idag
+
+═══════════════════════════════════════════════════════════════
+ FEJLSØGNING
+═══════════════════════════════════════════════════════════════
+
+"DASHBOARD_APP_URL mangler i bot .env"        → tilføj Vercel-URL i .env (f.eks. https://project-jg1cq.vercel.app)
+"Transcript vedhæftet" i stedet for link     → tjek DASHBOARD_APP_URL + SUPABASE_* i bot .env og genstart
+"AI er ikke sat op"        → GROQ_API_KEY mangler i .env
+",ai virker ikke"          → MESSAGE_CONTENT=true i .env
+Panel-knapper døde         → ,pris panel igen (ny besked)
+Behold data/applications   → tar overskriver IKKE data/*.json
+                           → behold din gamle data/ mappe
+                           → data/payroll.json bevarer lønsaldo ved opdatering
+
+Tjek at disse filer findes efter upload:
+  utils/payrollStore.js
+  handlers/payrollActions.js
+  handlers/pricePanelHandler.js
+  handlers/ticketAiHandler.js
+  handlers/partsPriceHandler.js
+  services/groqChat.js
+  services/priceVisionService.js
+  config/jgParts.js

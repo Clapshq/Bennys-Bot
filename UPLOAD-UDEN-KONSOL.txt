@@ -1,0 +1,44 @@
+╔══════════════════════════════════════════════════════════════╗
+║  UPLOAD — OVERSKRIVER AUTOMATISK (ingen konsol)              ║
+╚══════════════════════════════════════════════════════════════╝
+
+1) STOP botten
+
+2) File Manager → upload DENNE fil til /home/container:
+
+   bennys-upload-linux-LATEST.tar.gz
+
+   (du behøver IKKE slette handlers, commands osv. — botten gør det)
+
+3) BEHOLD kun:
+   • data/
+   • .env
+
+4) START botten
+
+   Panelet bruger allerede BOT_JS_FILE=index.js — det er korrekt.
+   Du behøver IKKE ændre startup.
+
+   Ved start (hvis tar.gz ligger i mappen):
+   • sletter gamle handlers, commands, utils, core osv.
+   • udpakker tar.gz automatisk
+   • genstarter med ny kode
+   • registrerer slash-kommandoer (/løn, /udbetal …)
+
+5) Tjek loggen:
+   [update] Udpakker bennys-upload-linux-LATEST.tar.gz
+   [deploy] Slash-kommandoer registreret ved opstart
+   [bennys] Benny's bot online (build: løn/support)
+
+6) Genindlæs Discord (Ctrl+R) → test /løn og /udbetal
+
+═══════════════════════════════════════════════════════════════
+
+Startup i panelet (Settings → Startup Command):
+
+   BOT_JS_FILE=index.js   (standard — ændr ikke)
+
+   Panelet kører: node /home/container/index.js
+
+Download:
+https://github.com/Clapshq/Bennys-Bot/releases/latest/download/bennys-upload-linux-LATEST.tar.gz

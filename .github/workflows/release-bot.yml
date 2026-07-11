@@ -1,0 +1,41 @@
+name: Release Bot
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pack bot release
+        run: bash scripts/pack-release.sh
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(date -u +%Y.%m.%d)-${{ github.run_number }}"
+          NOTES="Auto-genereret ved push til main.
+
+          Download \`bennys-upload-linux-LATEST.tar.gz\` og upload til Cybrancee File Manager.
+          Botten udpakker og genstarter automatisk."
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" releases/bennys-upload-linux-LATEST.tar.gz --clobber
+          else
+            gh release create "$TAG" releases/bennys-upload-linux-LATEST.tar.gz \
+              --title "Benny's Bot — $TAG" \
+              --notes "$NOTES" \
+              --latest
+          fi
+
+          if gh release view v2026.07.10 >/dev/null 2>&1; then
+            gh release upload v2026.07.10 releases/bennys-upload-linux-LATEST.tar.gz --clobber || true
+          fi

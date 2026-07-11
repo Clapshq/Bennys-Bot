@@ -1,0 +1,24 @@
+╔══════════════════════════════════════════════════════════════╗
+║  BENNY'S BOT — DOWNLOAD                                      ║
+╚══════════════════════════════════════════════════════════════╝
+
+  1 KLIK (anbefalet):
+
+  https://github.com/Clapshq/Bennys-Bot/releases/latest/download/bennys-upload-linux-LATEST.tar.gz
+
+  ─────────────────────────────────────────────────────────────
+
+  ELLER via GitHub:
+
+  Repo → fanen "Releases" → seneste release → download
+
+  ─────────────────────────────────────────────────────────────
+
+  På serveren (/home/container):
+
+      tar -xzf bennys-upload-linux-LATEST.tar.gz
+      npm run deploy-commands
+
+  VIGTIGT: Behold data/ og .env — overskriv dem IKKE!
+
+  Fuld guide: START-HER.txt (ligger inde i tar.gz)

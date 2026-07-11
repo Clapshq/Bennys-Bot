@@ -1,0 +1,15 @@
+Seneste bot-upload — genereret 2026-07-11 00:15 UTC
+
+UPLOAD DENNE FIL TIL CYBRANCEE:
+  releases/bennys-upload-linux-LATEST.tar.gz
+
+Arkiv med dato (backup):
+  releases/bennys-upload-linux-2026-07-11.tar.gz
+
+Efter upload på serveren:
+  cd /home/container
+  tar -xzf bennys-upload-linux-LATEST.tar.gz
+  npm run deploy-commands
+
+Behold data/ og .env på serveren!
+Se START-HER.txt i arkivet.
