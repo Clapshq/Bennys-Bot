@@ -1,3 +1,4 @@
+import { requestDashboardSync } from "../services/dashboardSync.js";
 import { createLogger } from "../core/logger.js";
 import { isSalaryChannel } from "./salaryHandler.js";
 import {
@@ -33,6 +34,7 @@ export async function handlePayrollMessageDelete(message) {
         messageId,
         pendingPay: emp.pendingPay,
       });
+      if (channel.client) requestDashboardSync(channel.client);
     }
     return;
   }
@@ -61,5 +63,6 @@ export async function handlePayrollMessageDelete(message) {
       messageId,
       pendingPay: emp.pendingPay,
     });
+    if (channel.client) requestDashboardSync(channel.client);
   }
 }

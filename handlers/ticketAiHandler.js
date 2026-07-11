@@ -1,6 +1,7 @@
 import { checkCooldown } from "../core/cooldowns.js";
 import { env } from "../core/env.js";
 import { rootLogger } from "../core/logger.js";
+import { requestDashboardSync } from "../services/dashboardSync.js";
 import { isTicketChannel, getTicketMeta } from "./ticketHandler.js";
 import { isSalaryChannel, resolveSalaryChannelOwner } from "./salaryHandler.js";
 import { isStaffMember } from "../utils/modHelpers.js";
@@ -193,6 +194,7 @@ export async function processInvoiceImages(message, { loadingMessage = null } = 
 
   if (inSalaryChannel && owner) {
     await logPayrollToDashboard(message, data, employeePay, owner);
+    requestDashboardSync(message.client);
   }
 
   return {

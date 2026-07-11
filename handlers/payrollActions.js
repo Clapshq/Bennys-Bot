@@ -8,6 +8,7 @@ import {
 } from "../utils/payrollStore.js";
 import { formatKr } from "../utils/quoteBuilder.js";
 import { createLogger } from "../core/logger.js";
+import { requestDashboardSync } from "../services/dashboardSync.js";
 
 const log = createLogger("payroll-actions");
 
@@ -55,7 +56,9 @@ export async function payoutEmployee(guild, user, paidBy) {
   if (!channel) {
     channel =
       guild.channels.cache.find((c) => c.name === getSalaryChannelName(user.username)) ??
-      guild.channels.cache.find((c) => c.name === `løn-${user.username.toLowerCase().replace(/[^a-z0-9]/g, "")}`);
+      guild.channels.cache.find(
+        (c) => isSalaryChannel(c) && resolveSalaryChannelOwner(guild, c)?.userId === user.id
+      );
   }
 
   if (channel) {
@@ -68,6 +71,8 @@ export async function payoutEmployee(guild, user, paidBy) {
       log.error("Kunne ikke sende udbetalings-embed", { channel: channel.name, error: err.message });
     }
   }
+
+  if (guild.client) requestDashboardSync(guild.client);
 
   return {
     ok: true,

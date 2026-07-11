@@ -114,6 +114,7 @@ export async function buildDashboardSnapshot(client) {
           pendingPay: e.pendingPay,
           totalEarned: e.totalEarned,
           totalPaid: e.totalPaid,
+          invoiceCount: e.invoices?.length ?? 0,
           lastPayout: e.lastPayout ?? null,
         }))
       : [],
