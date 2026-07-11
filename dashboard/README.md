@@ -1,27 +1,21 @@
 # Benny's Command Center v2
 
-Professionelt staff-dashboard — **auto-deploy via GitHub Actions**.
+## Auto-deploy (ingen kommandoer)
 
-## Auto-deploy (ingen manuel Vercel)
+1. Merge PR på GitHub
+2. Forbind repo på **vercel.com** → Root Directory: `dashboard`
+3. Indsæt env vars i Vercel (se `AUTO-DEPLOY.txt` i repo-roden)
 
-1. Kør `./scripts/setup-vercel-once.sh` én gang
-2. Tilføj GitHub Secrets (liste i scriptet / `AUTO-DEPLOY.txt`)
-3. Push til `main` → dashboard deployes automatisk til Vercel
+Vercel deployer automatisk ved hver push til `main`.
 
-Se **`AUTO-DEPLOY.txt`** i repo-roden.
+## Env vars (indsæt i Vercel UI)
 
-## Lokal udvikling
+Kopier værdier fra bot `.env` — se `dashboard/.env.example` for navnene.
 
-```bash
-cd dashboard
-npm install
-cp .env.example .env.local
-npm run dev
+## Discord OAuth redirect
+
+Tilføj i Developer Portal:
+
 ```
-
-## Features
-
-- Discord OAuth med rolle-check
-- Live data fra Supabase `bot_snapshots`
-- Kommando-kø til bot via `bot_commands`
-- Oversigt, Tickets, Ansøgninger, JG-priser, Løn, Giveaways, Embeds, Moderation
+https://din-vercel-url.vercel.app/api/auth/callback
+```
