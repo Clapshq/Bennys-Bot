@@ -5,7 +5,8 @@ import { syncDashboardSnapshot } from "./dashboardSync.js";
 import { runDashboardAction } from "./dashboardActions.js";
 import { setPartPrices, resetToCatalogDefaults } from "../utils/partsPriceStore.js";
 import { getPartById } from "../config/jgParts.js";
-import { createPersonalSalaryChannel } from "../handlers/salaryHandler.js";
+import { createPersonalSalaryChannel, removePersonalSalaryChannel } from "../handlers/salaryHandler.js";
+import { payoutEmployee } from "../handlers/payrollActions.js";
 import { refreshAllPanels, refreshOpenTicketControls } from "../handlers/panelsHandler.js";
 import { setGuildPrefix } from "../utils/guildMessageStore.js";
 import {
@@ -70,6 +71,27 @@ async function runCommand(client, cmd) {
       const result = await createPersonalSalaryChannel(guild, member, { recreate: Boolean(payload.recreate) });
       if (!result.ok) throw new Error(result.error ?? "Kunne ikke oprette kanal");
       return { channelId: result.channel?.id, message: result.message };
+    }
+
+    case "PAYOUT_EMPLOYEE": {
+      const user = await client.users.fetch(payload.userId).catch(() => null);
+      if (!user) throw new Error("Bruger ikke fundet");
+      const paidBy = await client.users.fetch(reviewerId).catch(() => client.user);
+      const result = await payoutEmployee(guild, user, paidBy);
+      if (!result.ok) throw new Error(result.error ?? "Udbetaling fejlede");
+      return { amount: result.amount, userId: user.id };
+    }
+
+    case "REMOVE_SALARY_CHANNEL": {
+      const user = await client.users.fetch(payload.userId).catch(() => null);
+      if (!user) throw new Error("Bruger ikke fundet");
+      const member = await guild.members.fetch(payload.userId).catch(() => null);
+      const result = await removePersonalSalaryChannel(guild, user.id, {
+        member: member ?? undefined,
+        removedBy: await client.users.fetch(reviewerId).catch(() => client.user),
+      });
+      if (!result.ok) throw new Error(result.error ?? "Kunne ikke fjerne");
+      return { ok: true };
     }
 
     case "CLOSE_TICKET": {
