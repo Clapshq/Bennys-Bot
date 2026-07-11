@@ -1,4 +1,3 @@
-import { createLogger } from "../core/logger.js";
 import {
   isSalaryChannel,
   resolveSalaryChannelOwner,
