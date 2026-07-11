@@ -1,0 +1,79 @@
+═══════════════════════════════════════════════════════════════
+  HVOR SKAL .env PASTES? (ingen terminal)
+═══════════════════════════════════════════════════════════════
+
+Du har ÉN .env — men den skal i TO steder (ikke hele filen begge steder).
+
+───────────────────────────────────────────────────────────────
+  STED 1 — BOT (Cybrancee)  ← størstedelen
+───────────────────────────────────────────────────────────────
+
+Hvor: Cybrancee panel → File Manager → filen:
+
+   /home/container/.env
+
+Hvad: Paste HELE din bot-.env her (som du har den nu).
+
+Skal indeholde bl.a.:
+   DISCORD_TOKEN=...
+   DISCORD_CLIENT_ID=...
+   DISCORD_GUILD_ID=...
+   GROQ_API_KEY=...
+   DASHBOARD_ENABLED=true
+   DASHBOARD_APP_URL=https://project-jg1cq.vercel.app
+   SUPABASE_URL=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   MESSAGE_CONTENT=true
+   MEMBER_INTENT=true
+   osv.
+
+Gem filen → genstart botten i panelet.
+
+───────────────────────────────────────────────────────────────
+  STED 2 — DASHBOARD (Vercel)  ← kun disse linjer
+───────────────────────────────────────────────────────────────
+
+Hvor: https://vercel.com → dit projekt → Settings → Environment Variables
+
+Du kan IKKE uploade .env-fil direkte som på Cybrancee.
+Tilføj hver variabel (eller paste flere linjer ad gangen):
+
+   NEXT_PUBLIC_APP_URL=https://project-jg1cq.vercel.app
+   DISCORD_CLIENT_ID=          ← samme værdi som i bot .env
+   DISCORD_CLIENT_SECRET=      ← fra Discord Developer Portal (OAuth2)
+   DISCORD_GUILD_ID=           ← samme som bot
+   DISCORD_BOT_TOKEN=          ← SAMME som DISCORD_TOKEN i bot
+   SUPABASE_URL=               ← samme som bot
+   SUPABASE_SERVICE_ROLE_KEY=  ← samme som bot
+   SESSION_SECRET=             ← lav ny lang streng (min 32 tegn) ELLER brug en du har
+   DASHBOARD_STAFF_ROLES=Mekaniker,Lærling,Ledelse,Med-ejer,Stifter
+
+Vælg Environment: Production + Preview + Development (alle tre).
+Klik Save → Redeploy projektet (Deployments → ... → Redeploy).
+
+───────────────────────────────────────────────────────────────
+  HURTIG OVERSÆTTELSE (bot .env → Vercel)
+───────────────────────────────────────────────────────────────
+
+Fra din bot .env:                    Ind i Vercel som:
+─────────────────────────────────────────────────────────────
+DISCORD_TOKEN=xxx          →         DISCORD_BOT_TOKEN=xxx
+DISCORD_CLIENT_ID=xxx      →         DISCORD_CLIENT_ID=xxx
+DISCORD_GUILD_ID=xxx       →         DISCORD_GUILD_ID=xxx
+DASHBOARD_APP_URL=xxx      →         NEXT_PUBLIC_APP_URL=xxx
+SUPABASE_URL=xxx           →         SUPABASE_URL=xxx
+SUPABASE_SERVICE_ROLE_KEY  →         SUPABASE_SERVICE_ROLE_KEY
+
+KUN i Vercel (findes måske ikke i bot .env):
+   DISCORD_CLIENT_SECRET    → fra discord.com/developers → OAuth2
+   SESSION_SECRET           → tilfældig lang streng (login-cookie)
+
+───────────────────────────────────────────────────────────────
+  DISCORD REDIRECT (én gang)
+───────────────────────────────────────────────────────────────
+
+discord.com/developers → din app → OAuth2 → Redirects:
+
+   https://project-jg1cq.vercel.app/api/auth/callback
+
+═══════════════════════════════════════════════════════════════
