@@ -47,6 +47,7 @@ export async function handlePayrollMessageDelete(message) {
       for (const msg of recent.values()) {
         if (msg.author.id !== botId || msg.reference?.messageId !== messageId) continue;
         removePayrollInvoicesForDeletedMessage(guildId, channelId, { botMessageId: msg.id });
+        await msg.delete().catch(() => {});
       }
     } catch (err) {
       log.warn("Kunne ikke finde bot-svar på slettet upload", { error: err.message });

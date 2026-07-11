@@ -105,6 +105,8 @@ export function addPayrollInvoice(guildId, channelId, {
   scannedById,
   scannedByTag,
   messageId,
+  sourceMessageId,
+  botMessageId,
   messageDate,
 }) {
   const data = readStore();
@@ -116,12 +118,17 @@ export function addPayrollInvoice(guildId, channelId, {
   const total = Math.round(Number(invoiceTotal) || 0);
   if (pay <= 0) return emp;
 
+  if (sourceMessageId && emp.invoices.some((i) => i.sourceMessageId === sourceMessageId)) {
+    return emp;
+  }
   if (messageId && emp.invoices.some((i) => i.messageId === messageId)) {
     return emp;
   }
 
   emp.invoices.push({
-    messageId: messageId ?? null,
+    messageId: messageId ?? (botMessageId ? `embed:${botMessageId}:0` : null),
+    sourceMessageId: sourceMessageId ?? null,
+    botMessageId: botMessageId ?? null,
     invoiceTotal: total,
     employeePay: pay,
     scannedById: scannedById ?? null,

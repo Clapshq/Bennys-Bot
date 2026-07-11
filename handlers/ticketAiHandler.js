@@ -1,4 +1,5 @@
 import { checkCooldown } from "../core/cooldowns.js";
+import { env } from "../core/env.js";
 import { rootLogger } from "../core/logger.js";
 import { isTicketChannel, getTicketMeta } from "./ticketHandler.js";
 import { isSalaryChannel, resolveSalaryChannelOwner } from "./salaryHandler.js";
@@ -17,11 +18,13 @@ import {
   formatKr,
 } from "../utils/quoteBuilder.js";
 import { getPartsPriceStore } from "../utils/partsPriceStore.js";
-import { collectMessageImageUrls } from "../utils/messageImages.js";
-import { addPayrollInvoice } from "../utils/payrollStore.js";
+import { collectMessageImageUrls, messageHasImages } from "../utils/messageImages.js";
+import { addPayrollInvoice, getPayrollEmployee, registerPayrollEmployee } from "../utils/payrollStore.js";
 import { JG_MARKUP_PERCENT } from "../config/jgParts.js";
 
 const AI_COOLDOWN_MS = 12_000;
+const PAYROLL_AUTO_COOLDOWN_MS = 8_000;
+const payrollProcessedIds = new Set();
 
 function aiHelpEmbed() {
   return createEmbed("accent")
@@ -30,7 +33,7 @@ function aiHelpEmbed() {
     .addFields(
       { name: "Spørgsmål", value: "`,ai Hvad koster bugsering?`\n`,ai Forklar JG tuning`", inline: false },
       { name: "Beregn tilbud", value: "`,ai tilbud V8 motor og keramiske bremser`", inline: false },
-      { name: "Faktura (staff)", value: "Upload i løn-kanal — brug `/løn stats` for oversigt (ingen beskeder i kanalen)", inline: false },
+      { name: "Faktura (staff)", value: "Upload screenshot i din `#løn-[navn]` — bot svarer med **20% løn**", inline: false },
       { name: "Staff", value: "`,tilbud smart <beskrivelse>`", inline: false }
     );
 }
@@ -117,18 +120,15 @@ function buildInvoiceEmbed(data, { ownerTag, pendingPay } = {}) {
   return embed;
 }
 
-/** Læs faktura-screenshot — i løn-kanaler skrives der ikke (brug /løn stats til embeds) */
+/** Læs faktura-screenshot — i løn-kanaler: AI 20% + svar-embed på upload */
 export async function processInvoiceImages(message, { loadingMessage = null } = {}) {
-  if (isSalaryChannel(message.channel)) {
-    if (loadingMessage) await loadingMessage.delete().catch(() => {});
-    return null;
-  }
-
   const urls = await collectMessageImageUrls(message);
   if (!urls.length) return null;
 
-  const owner = resolveSalaryChannelOwner(message.guild, message.channel);
-  if (!owner?.userId) {
+  const inSalaryChannel = isSalaryChannel(message.channel);
+  const owner = inSalaryChannel ? resolveSalaryChannelOwner(message.guild, message.channel) : null;
+
+  if (inSalaryChannel && !owner?.userId) {
     const errEmbed = createEmbed("warning")
       .setTitle("💰 Løn")
       .setDescription("❌ Kunne ikke finde ejer af denne løn-kanal — kontakt ledelse.");
@@ -144,29 +144,64 @@ export async function processInvoiceImages(message, { loadingMessage = null } = 
   const data = parseJsonFromAi(raw);
   const employeePay = resolveEmployeePay(data);
 
+  if (employeePay <= 0) {
+    const errEmbed = createEmbed("warning")
+      .setTitle("💰 Løn")
+      .setDescription("❌ Kunne ikke aflæse fakturabeløb — tjek screenshot manuelt.");
+    if (loadingMessage) {
+      await loadingMessage.edit({ content: null, embeds: [errEmbed] }).catch(() => message.reply({ embeds: [errEmbed] }));
+    } else if (inSalaryChannel) {
+      await message.reply({ embeds: [errEmbed] }).catch(() => {});
+    }
+    return null;
+  }
+
+  if (inSalaryChannel && owner) {
+    registerPayrollEmployee(message.guild.id, {
+      userId: owner.userId,
+      userTag: owner.userTag,
+      channelId: message.channel.id,
+      channelName: message.channel.name,
+    });
+  }
+
+  const embed = buildInvoiceEmbed(data, {
+    ownerTag: owner?.userTag,
+    pendingPay: owner ? (getPayrollEmployee(message.guild.id, owner.userId)?.pendingPay ?? 0) + employeePay : undefined,
+  });
+
+  let botReply = loadingMessage;
+  if (botReply) {
+    const edited = await botReply.edit({ content: null, embeds: [embed] }).catch(() => null);
+    if (!edited) botReply = await message.reply({ embeds: [embed] }).catch(() => null);
+  } else if (inSalaryChannel) {
+    botReply = await message.reply({ embeds: [embed] }).catch(() => null);
+  } else {
+    botReply = await message.reply({ embeds: [embed] }).catch(() => null);
+  }
+
   const updated = addPayrollInvoice(message.guild.id, message.channel.id, {
     invoiceTotal: resolveInvoiceTotal(data),
     employeePay,
     scannedById: message.author.id,
     scannedByTag: message.author.tag,
-    messageId: message.id,
+    sourceMessageId: message.id,
+    botMessageId: botReply?.id ?? null,
+    messageId: botReply?.id ? `embed:${botReply.id}:0` : `upload:${message.id}`,
     messageDate: new Date(message.createdTimestamp).toISOString(),
   });
 
-  const embed = buildInvoiceEmbed(data, {
-    ownerTag: owner.userTag,
-    pendingPay: updated?.pendingPay ?? owner.pendingPay,
-  });
-
-  await logPayrollToDashboard(message, data, employeePay, owner);
-
-  if (loadingMessage) {
-    await loadingMessage.edit({ content: null, embeds: [embed] }).catch(() => message.reply({ embeds: [embed] }));
-  } else {
-    await message.reply({ embeds: [embed] }).catch(() => {});
+  if (inSalaryChannel && owner) {
+    await logPayrollToDashboard(message, data, employeePay, owner);
   }
 
-  return { data, employeePay, owner, pendingPay: updated?.pendingPay ?? 0 };
+  return {
+    data,
+    employeePay,
+    owner,
+    pendingPay: updated?.pendingPay ?? 0,
+    botReplyId: botReply?.id ?? null,
+  };
 }
 
 /** Velkomst-besked ved oprettelse af løn-kanal — ikke en faktura */
@@ -257,8 +292,6 @@ async function logPayrollToDashboard(message, data, employeePay, owner) {
 }
 
 async function handleAiFaktura(message) {
-  if (isSalaryChannel(message.channel)) return true;
-
   if (!isStaffMember(message.member)) {
     await message.reply("❌ Kun staff kan tjekke faktura-screenshots.").catch(() => {});
     return true;
@@ -386,9 +419,34 @@ export async function handleTicketAi(message, rawArgs) {
   return true;
 }
 
-/** Auto-scan i løn-kanaler er slået fra — brug /løn stats (læser bot-embeds) */
-export async function tryAutoScanPayrollInvoice() {
-  return false;
+/** Auto-scan faktura i løn-kanal — AI 20% + svar-embed */
+export async function tryAutoScanPayrollInvoice(message) {
+  if (!env.aiPayrollAutoScan || !isGroqConfigured()) return false;
+  if (!message.guild || message.author.bot) return false;
+  if (!isSalaryChannel(message.channel)) return false;
+  if (!messageHasImages(message)) return false;
+  if (payrollProcessedIds.has(message.id)) return false;
+
+  const content = message.content.trim();
+  if (content.startsWith(",")) return false;
+
+  const cd = checkCooldown(message.channel.id, "payroll-invoice-auto", PAYROLL_AUTO_COOLDOWN_MS);
+  if (!cd.allowed) return false;
+
+  payrollProcessedIds.add(message.id);
+  if (payrollProcessedIds.size > 500) {
+    const first = payrollProcessedIds.values().next().value;
+    payrollProcessedIds.delete(first);
+  }
+
+  try {
+    await processInvoiceImages(message);
+    return true;
+  } catch (err) {
+    rootLogger.error("Auto løn-faktura fejlede", { error: err.message });
+    payrollProcessedIds.delete(message.id);
+    return false;
+  }
 }
 
 /** Staff: ,tilbud smart <beskrivelse> */
