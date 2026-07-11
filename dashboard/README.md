@@ -1,21 +1,7 @@
-# Benny's Command Center v2
+# Benny's Command Center
 
-## Auto-deploy (ingen kommandoer)
+Variabler sættes i dit eksisterende Vercel-projekt **Dashboard** (allerede gjort).
 
-1. Merge PR på GitHub
-2. Forbind repo på **vercel.com** → Root Directory: `dashboard`
-3. Indsæt env vars i Vercel (se `AUTO-DEPLOY.txt` i repo-roden)
+Efter merge af PR: sæt Root Directory til `dashboard` og klik Redeploy i Vercel.
 
-Vercel deployer automatisk ved hver push til `main`.
-
-## Env vars (indsæt i Vercel UI)
-
-Kopier værdier fra bot `.env` — se `dashboard/.env.example` for navnene.
-
-## Discord OAuth redirect
-
-Tilføj i Developer Portal:
-
-```
-https://din-vercel-url.vercel.app/api/auth/callback
-```
+Se `DASHBOARD-SIMPELT.txt` i repo-roden.
